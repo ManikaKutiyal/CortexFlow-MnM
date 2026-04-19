@@ -70,6 +70,22 @@ function parseGeminiJson(text: string): { transcript: string; word_timestamps?: 
   }
 }
 
+function resolveMimeType(file: File): string {
+  if (file.type) return file.type;
+  const ext = file.name?.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "mp3": return "audio/mp3";
+    case "wav": return "audio/wav";
+    case "m4a": return "audio/m4a";
+    case "ogg": return "audio/ogg";
+    case "flac": return "audio/flac";
+    case "webm": return "audio/webm";
+    case "mp4": return "audio/mp4";
+    case "aac": return "audio/aac";
+    default: return "audio/webm";
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!GEMINI_API_KEY) {
@@ -110,7 +126,7 @@ export async function POST(req: NextRequest) {
               },
               {
                 inlineData: {
-                  mimeType: audioFile.type || "audio/webm",
+                  mimeType: resolveMimeType(audioFile),
                   data: audioBase64,
                 },
               },
