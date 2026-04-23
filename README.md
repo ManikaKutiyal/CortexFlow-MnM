@@ -1,5 +1,7 @@
 # CortexFlow
 
+![CortexFlow Banner](frontend/public/images/CortexFlow%20(1).png)
+
 CortexFlow is a full-stack cognitive signal analysis platform built for fast screening workflows from text and speech. It combines browser-based voice capture, Gemini-powered transcription, deterministic linguistic feature extraction, and a report interface that maps output to domain-level brain-region signals.
 
 ## What It Does
@@ -74,7 +76,7 @@ Required fields for a full run:
 ```env
 GEMINI_API_KEY=
 GEMINI_API_BASE=https://generativelanguage.googleapis.com/v1beta
-GEMINI_TRANSCRIBE_MODEL=gemini-2.5-flash
+GEMINI_TRANSCRIBE_MODEL=gemini-2.0-flash
 BACKEND_URL=http://localhost:8000
 NEXT_PUBLIC_BACKEND_WAKE_ENABLED=true
 NEXT_PUBLIC_DEV_BYPASS_AUTH=true
@@ -108,10 +110,10 @@ GEMINI_API_KEY=
 GEMINI_API_BASE=https://generativelanguage.googleapis.com/v1beta
 GEMINI_TIMEOUT_SECONDS=40
 MODEL_DISCOVERY_TTL_SECONDS=900
-GEMINI_REASONING_CANDIDATES=gemini-2.5-flash,gemini-2.0-flash
-GEMINI_SAFETY_CANDIDATES=gemini-2.5-flash,gemini-2.0-flash
-GEMINI_REASONING_MODEL=gemini-2.5-flash
-GEMINI_SAFETY_MODEL=gemini-2.5-flash
+GEMINI_REASONING_CANDIDATES=gemini-2.0-flash,gemini-1.5-flash
+GEMINI_SAFETY_CANDIDATES=gemini-2.0-flash,gemini-1.5-flash
+GEMINI_REASONING_MODEL=gemini-2.0-flash
+GEMINI_SAFETY_MODEL=gemini-2.0-flash
 MIN_WORDS_REQUIRED=3
 ```
 
