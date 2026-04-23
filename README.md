@@ -1,5 +1,3 @@
-# CortexFlow
-
 ![CortexFlow Banner](frontend/public/images/CortexFlow%20(1).png)
 
 CortexFlow is a full-stack cognitive signal analysis platform built for fast screening workflows from text and speech. It combines browser-based voice capture, Gemini-powered transcription, deterministic linguistic feature extraction, and a report interface that maps output to domain-level brain-region signals.
