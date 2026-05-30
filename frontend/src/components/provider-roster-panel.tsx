@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type ProviderPatient = {
   id: string;
@@ -20,6 +21,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function ProviderRosterPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function ProviderRosterPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/provider/roster", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/provider/roster", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load roster");
@@ -47,8 +49,9 @@ export function ProviderRosterPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadRoster();
-  }, [loadRoster]);
+  }, [loadRoster, idToken, isReady]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return patients;

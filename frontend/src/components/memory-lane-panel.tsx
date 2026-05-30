@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type MemoryEntry = {
   id: string;
@@ -48,6 +49,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function MemoryLanePanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [entries, setEntries] = useState<MemoryEntry[]>([]);
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,14 +71,73 @@ export function MemoryLanePanel() {
     transcript: "",
   });
 
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+
+        setIsLoading(true);
+        setError(null);
+        try {
+          const formData = new FormData();
+          formData.append("file", audioBlob, "voice_note.webm");
+          formData.append("folder", "voice_notes");
+
+          const res = await authFetch("/api/storage/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const msg = await res.text();
+            throw new Error(msg || "Upload failed");
+          }
+
+          const data = await res.json();
+          if (data.url) {
+            setVoiceNoteForm((prev) => ({ ...prev, filePath: data.url }));
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Failed to upload audio";
+          setError(msg);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      setError("Microphone access denied or unavailable.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const [entriesRes, notesRes] = await Promise.all([
-        fetch("/api/memory-lane/entries", { method: "GET", cache: "no-store" }),
-        fetch("/api/memory-lane/voice-notes", { method: "GET", cache: "no-store" }),
+        authFetch("/api/memory-lane/entries", { method: "GET", cache: "no-store" }),
+        authFetch("/api/memory-lane/voice-notes", { method: "GET", cache: "no-store" }),
       ]);
 
       if (!entriesRes.ok) {
@@ -102,8 +163,9 @@ export function MemoryLanePanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadData();
-  }, [loadData]);
+  }, [loadData, idToken, isReady]);
 
   const canSubmitMemory = memoryForm.title.trim().length > 1;
   const canSubmitVoiceNote = voiceNoteForm.filePath.trim().length > 0 || voiceNoteForm.transcript.trim().length > 0;
@@ -125,7 +187,7 @@ export function MemoryLanePanel() {
       recordedAt: memoryForm.recordedAt || null,
     };
 
-    const res = await fetch("/api/memory-lane/entries", {
+    const res = await authFetch("/api/memory-lane/entries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -163,7 +225,7 @@ export function MemoryLanePanel() {
       transcript: voiceNoteForm.transcript.trim() || null,
     };
 
-    const res = await fetch("/api/memory-lane/voice-notes", {
+    const res = await authFetch("/api/memory-lane/voice-notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -346,13 +408,26 @@ export function MemoryLanePanel() {
                     className="w-full rounded-lg px-3 py-2 text-sm outline-none"
                     style={{ background: "var(--nt-hdr)", color: "var(--nt-text-hi)", border: "1px solid var(--nt-divider)" }}
                   />
-                  <input
-                    value={voiceNoteForm.filePath}
-                    onChange={(event) => setVoiceNoteForm((prev) => ({ ...prev, filePath: event.target.value }))}
-                    placeholder="Audio URL or storage path"
-                    className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                    style={{ background: "var(--nt-hdr)", color: "var(--nt-text-hi)", border: "1px solid var(--nt-divider)" }}
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={voiceNoteForm.filePath}
+                      onChange={(event) => setVoiceNoteForm((prev) => ({ ...prev, filePath: event.target.value }))}
+                      placeholder="Audio URL or storage path"
+                      className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                      style={{ background: "var(--nt-hdr)", color: "var(--nt-text-hi)", border: "1px solid var(--nt-divider)" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold shrink-0"
+                      style={{
+                        background: isRecording ? "#D85A30" : "var(--nt-btn-bg)",
+                        color: "var(--nt-btn-fg)",
+                      }}
+                    >
+                      {isRecording ? "Stop Rec" : "Mic"}
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={voiceNoteForm.transcript}
@@ -396,6 +471,11 @@ export function MemoryLanePanel() {
                       <div className="text-[10px]" style={{ color: "var(--nt-text-ghost)", marginTop: 6 }}>
                         {note.duration_seconds ? `${note.duration_seconds}s` : ""} {note.created_at ? `- ${new Date(note.created_at).toLocaleString()}` : ""}
                       </div>
+                      {note.file_path && (
+                        <div className="mt-3">
+                          <audio controls src={note.file_path} className="w-full h-8" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

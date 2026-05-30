@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type ProviderPatient = {
   id: string;
@@ -88,6 +89,7 @@ function shortDate(value: string) {
 }
 
 export function ProviderSpeechAnalysisPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [summary, setSummary] = useState<SpeechSummary | null>(null);
@@ -104,7 +106,7 @@ export function ProviderSpeechAnalysisPanel() {
 
     try {
       const query = patientId ? `?patientId=${encodeURIComponent(patientId)}` : "";
-      const res = await fetch(`/api/provider/speech-analysis${query}`, { method: "GET", cache: "no-store" });
+      const res = await authFetch(`/api/provider/speech-analysis${query}`, { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load speech analysis");
@@ -127,13 +129,14 @@ export function ProviderSpeechAnalysisPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadSpeechAnalysis();
-  }, [loadSpeechAnalysis]);
+  }, [loadSpeechAnalysis, idToken, isReady]);
 
   useEffect(() => {
-    if (!selectedPatientId) return;
+    if (!isReady || !selectedPatientId) return;
     void loadSpeechAnalysis(selectedPatientId);
-  }, [selectedPatientId, loadSpeechAnalysis]);
+  }, [selectedPatientId, loadSpeechAnalysis, idToken, isReady]);
 
   const selectedSession = useMemo(() => {
     return sessions.find((session) => session.id === selectedSessionId) ?? sessions[0] ?? null;

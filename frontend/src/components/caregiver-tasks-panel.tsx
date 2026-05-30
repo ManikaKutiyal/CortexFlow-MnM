@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type CareTask = {
   id: string;
@@ -30,6 +31,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function CaregiverTasksPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [tasks, setTasks] = useState<CareTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function CaregiverTasksPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/caregiver/tasks", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/caregiver/tasks", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load tasks");
@@ -64,8 +66,9 @@ export function CaregiverTasksPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadTasks();
-  }, [loadTasks]);
+  }, [loadTasks, idToken, isReady]);
 
   const summary = useMemo(() => {
     if (!tasks.length) return "No tasks yet.";
@@ -90,7 +93,7 @@ export function CaregiverTasksPanel() {
     };
 
     try {
-      const res = await fetch("/api/caregiver/tasks", {
+      const res = await authFetch("/api/caregiver/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -122,7 +125,7 @@ export function CaregiverTasksPanel() {
   }, [canSubmit, formState]);
 
   const updateTaskStatus = useCallback(async (taskId: string, status: CareTask["status"]) => {
-    const res = await fetch(`/api/caregiver/tasks/${taskId}`, {
+    const res = await authFetch(`/api/caregiver/tasks/${taskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),

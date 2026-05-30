@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type ProviderPatient = {
   id: string;
@@ -24,6 +25,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function ProviderNotificationsPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +41,7 @@ export function ProviderNotificationsPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/provider/notifications", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/provider/notifications", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load notifications");
@@ -57,8 +59,9 @@ export function ProviderNotificationsPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadData();
-  }, [loadData]);
+  }, [loadData, idToken, isReady]);
 
   const canSend = title.trim().length > 1 && patientId;
 
@@ -69,7 +72,7 @@ export function ProviderNotificationsPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/provider/notifications", {
+      const res = await authFetch("/api/provider/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patientId, title: title.trim(), body: body.trim() || null }),

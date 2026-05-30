@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type EmergencyEvent = {
   id: string;
@@ -35,6 +36,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function SafetyCenterPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [events, setEvents] = useState<EmergencyEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export function SafetyCenterPanel() {
     setEventsError(null);
 
     try {
-      const res = await fetch("/api/safety/events", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/safety/events", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load events");
@@ -74,8 +76,9 @@ export function SafetyCenterPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadEvents();
-  }, [loadEvents]);
+  }, [loadEvents, idToken, isReady]);
 
   const eventSummary = useMemo(() => {
     if (!events.length) return "No emergency events yet.";
@@ -94,7 +97,7 @@ export function SafetyCenterPanel() {
     };
 
     try {
-      const res = await fetch("/api/safety/events", {
+      const res = await authFetch("/api/safety/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -147,7 +150,7 @@ export function SafetyCenterPanel() {
       additionalInfo: "",
     };
 
-    const res = await fetch("/api/safety/face/register", {
+    const res = await authFetch("/api/safety/face/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -174,7 +177,7 @@ export function SafetyCenterPanel() {
       return;
     }
 
-    const res = await fetch("/api/safety/face/recognize", {
+    const res = await authFetch("/api/safety/face/recognize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageData: recognizeImage }),

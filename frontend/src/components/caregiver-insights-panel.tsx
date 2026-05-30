@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type InsightReport = {
   id: string;
@@ -66,6 +67,7 @@ function trendColor(trend: CaregiverInsights["summary"]["trend"]) {
 }
 
 export function CaregiverInsightsPanel() {
+  const { authFetch, idToken } = useAuthFetch();
   const [insights, setInsights] = useState<CaregiverInsights | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export function CaregiverInsightsPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/caregiver/insights", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/caregiver/insights", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load insights");
@@ -93,7 +95,7 @@ export function CaregiverInsightsPanel() {
 
   useEffect(() => {
     void loadInsights();
-  }, [loadInsights]);
+  }, [loadInsights, idToken]);
 
   const patientLabel = useMemo(() => {
     if (!insights?.patient) return "No patient linked.";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type ProviderPatient = {
   id: string;
@@ -37,6 +38,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function ProviderOrdersPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [tasks, setTasks] = useState<ProviderTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +58,7 @@ export function ProviderOrdersPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/provider/orders", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/provider/orders", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load orders");
@@ -74,8 +76,9 @@ export function ProviderOrdersPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadOrders();
-  }, [loadOrders]);
+  }, [loadOrders, idToken, isReady]);
 
   const summary = useMemo(() => {
     if (!tasks.length) return "No orders yet.";
@@ -101,7 +104,7 @@ export function ProviderOrdersPanel() {
     };
 
     try {
-      const res = await fetch("/api/provider/orders", {
+      const res = await authFetch("/api/provider/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -134,7 +137,7 @@ export function ProviderOrdersPanel() {
   }, [canSubmit, formState]);
 
   const updateTaskStatus = useCallback(async (taskId: string, status: ProviderTask["status"]) => {
-    const res = await fetch(`/api/provider/orders/${taskId}`, {
+    const res = await authFetch(`/api/provider/orders/${taskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),

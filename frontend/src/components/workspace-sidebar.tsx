@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { Activity, Brain, Clock, FileText, HelpCircle, LayoutDashboard, Mic, Plus } from "lucide-react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type NavItem = { title: string; icon: React.ComponentType<{ size?: number; className?: string }>; url: string; badge?: number };
 {}
@@ -23,6 +24,7 @@ export function WorkspaceSidebar({
   onLogout,
   role = "patient",
 }: WorkspaceSidebarProps) {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [showAccountActions, setShowAccountActions] = React.useState(false);
   const [notificationCount, setNotificationCount] = React.useState(0);
 
@@ -33,7 +35,7 @@ export function WorkspaceSidebar({
     }
 
     try {
-      const res = await fetch("/api/notifications", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/notifications", { method: "GET", cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json() as { notifications?: Array<{ read_at: string | null }> };
       const unread = (data.notifications ?? []).filter((item) => !item.read_at).length;
@@ -44,8 +46,9 @@ export function WorkspaceSidebar({
   }, [role]);
 
   React.useEffect(() => {
+    if (!isReady) return;
     void loadNotificationCount();
-  }, [loadNotificationCount]);
+  }, [loadNotificationCount, idToken, isReady]);
 
   const navMain: NavItem[] = role === "caregiver"
     ? [

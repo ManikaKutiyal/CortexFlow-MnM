@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type EmergencyEvent = {
   id: string;
@@ -21,6 +22,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function CaregiverAlertsPanel() {
+  const { authFetch, idToken } = useAuthFetch();
   const [events, setEvents] = useState<EmergencyEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function CaregiverAlertsPanel() {
     setError(null);
 
     try {
-      const alertsRes = await fetch("/api/caregiver/alerts", { method: "GET", cache: "no-store" });
+      const alertsRes = await authFetch("/api/caregiver/alerts", { method: "GET", cache: "no-store" });
       if (!alertsRes.ok) {
         const message = await alertsRes.text();
         throw new Error(message || "Failed to load alerts");
@@ -48,7 +50,7 @@ export function CaregiverAlertsPanel() {
 
   useEffect(() => {
     void loadAlerts();
-  }, [loadAlerts]);
+  }, [loadAlerts, idToken]);
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden" style={{ padding: "18px" }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type CaregiverOverview = {
   patient: {
@@ -32,6 +33,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function CaregiverOverviewPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [overview, setOverview] = useState<CaregiverOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function CaregiverOverviewPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/caregiver/overview", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/caregiver/overview", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load overview");
@@ -69,7 +71,7 @@ export function CaregiverOverviewPanel() {
     setNotifyError(null);
 
     try {
-      const res = await fetch("/api/caregiver/notifications", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/caregiver/notifications", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load notifications");
@@ -87,9 +89,10 @@ export function CaregiverOverviewPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadOverview();
     void loadNotifications();
-  }, [loadOverview, loadNotifications]);
+  }, [loadOverview, loadNotifications, idToken, isReady]);
 
   const patientLabel = useMemo(() => {
     if (!overview?.patient) return "No patient linked.";
@@ -109,7 +112,7 @@ export function CaregiverOverviewPanel() {
     setNotifyError(null);
 
     try {
-      const res = await fetch("/api/caregiver/notifications", {
+      const res = await authFetch("/api/caregiver/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: notifyTitle.trim(), body: notifyBody.trim() || null }),

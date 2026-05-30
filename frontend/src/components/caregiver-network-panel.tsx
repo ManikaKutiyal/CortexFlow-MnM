@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type CareNetworkMember = {
   id: string;
@@ -31,6 +32,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function CaregiverNetworkPanel() {
+  const { authFetch, idToken } = useAuthFetch();
   const [network, setNetwork] = useState<CareNetworkResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function CaregiverNetworkPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/caregiver/network", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/caregiver/network", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load care network");
@@ -61,7 +63,7 @@ export function CaregiverNetworkPanel() {
 
   useEffect(() => {
     void loadNetwork();
-  }, [loadNetwork]);
+  }, [loadNetwork, idToken]);
 
   const patientLabel = useMemo(() => {
     if (!network?.patient) return "No patient linked.";
@@ -77,7 +79,7 @@ export function CaregiverNetworkPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/caregiver/network", {
+      const res = await authFetch("/api/caregiver/network", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: noteTitle.trim(), description: noteBody.trim() || null }),

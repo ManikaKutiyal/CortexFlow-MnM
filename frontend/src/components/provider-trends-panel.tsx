@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type ProviderPatient = {
   id: string;
@@ -129,6 +130,7 @@ function shortDate(value: string) {
 }
 
 export function ProviderTrendsPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [patient, setPatient] = useState<PatientDetail | null>(null);
@@ -147,7 +149,7 @@ export function ProviderTrendsPanel() {
 
     try {
       const query = patientId ? `?patientId=${encodeURIComponent(patientId)}` : "";
-      const res = await fetch(`/api/provider/patient-trends${query}`, { method: "GET", cache: "no-store" });
+      const res = await authFetch(`/api/provider/patient-trends${query}`, { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load patient trends");
@@ -165,20 +167,23 @@ export function ProviderTrendsPanel() {
       setMetrics(data.metrics ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load patient trends";
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load patient trends";
       setError(message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadTrends();
-  }, [loadTrends]);
+  }, [loadTrends, idToken, isReady]);
 
   useEffect(() => {
-    if (!selectedPatientId) return;
+    if (!isReady || !selectedPatientId) return;
     void loadTrends(selectedPatientId);
-  }, [selectedPatientId, loadTrends]);
+  }, [selectedPatientId, loadTrends, idToken, isReady]);
 
   const avgLoadLabel = useMemo(() => {
     return formatPercent(summary?.avg_cognitive_load);
