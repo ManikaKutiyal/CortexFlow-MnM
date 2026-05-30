@@ -22,6 +22,8 @@ type AuthProfile = {
   name: string;
   photoUrl: string;
   providerId: string | null;
+  role?: "patient" | "caregiver" | "provider" | null;
+  needsRoleSelection?: boolean;
 };
 
 type AuthActionResult = {

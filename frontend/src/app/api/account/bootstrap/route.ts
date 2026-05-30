@@ -11,6 +11,8 @@ type UserRow = {
   display_name: string | null;
   photo_url: string | null;
   provider: string | null;
+  role: "patient" | "caregiver" | "provider" | null;
+  needs_role_selection: boolean | null;
   created_at: string;
 };
 
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
 
       const { data: existingRows, error: existingRowsError } = await supabase
         .from("users")
-        .select("id, email, display_name, photo_url, provider, created_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, created_at")
         .eq("email", normalizedEmail)
         .order("created_at", { ascending: true });
 
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
     } else {
       const { data: existingUserById } = await supabase
         .from("users")
-        .select("id, email, display_name, photo_url, provider, created_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, created_at")
         .eq("id", user.uid)
         .maybeSingle();
 
@@ -91,6 +93,8 @@ export async function POST(req: NextRequest) {
       display_name: string | null;
       photo_url: string | null;
       provider: string | null;
+      role: "patient" | "caregiver" | "provider" | null;
+      needs_role_selection: boolean | null;
       last_login_at: string | null;
     } | null = null;
     let error: { message: string } | null = null;
@@ -107,7 +111,7 @@ export async function POST(req: NextRequest) {
           updated_at: now,
         })
         .eq("id", canonicalId)
-        .select("id, email, display_name, photo_url, provider, last_login_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, last_login_at")
         .single();
 
       data = result.data;
@@ -124,7 +128,7 @@ export async function POST(req: NextRequest) {
           last_login_at: now,
           updated_at: now,
         })
-        .select("id, email, display_name, photo_url, provider, last_login_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, last_login_at")
         .single();
 
       data = result.data;

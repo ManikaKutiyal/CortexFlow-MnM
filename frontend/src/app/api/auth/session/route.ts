@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
         name: user.name ?? user.email?.split("@")[0] ?? "Researcher",
         photoUrl: user.picture ?? "",
         providerId: user.provider ?? "password",
+        role: user.role ?? null,
+        needsRoleSelection: user.needsRoleSelection ?? true,
       },
     });
   } catch (error) {
