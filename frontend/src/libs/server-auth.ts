@@ -9,6 +9,8 @@ export type VerifiedUser = {
   name: string | null;
   picture: string | null;
   provider: string | null;
+  role?: "patient" | "caregiver" | "provider" | null;
+  needsRoleSelection?: boolean;
 };
 
 export class AuthRequestError extends Error {
@@ -83,6 +85,20 @@ async function resolveCanonicalUid(firebaseUid: string, rawEmail: string | null)
   return byUid?.id ?? firebaseUid;
 }
 
+async function loadUserRole(userId: string): Promise<{ role: VerifiedUser["role"]; needsRoleSelection: boolean }> {
+  const supabase = getSupabaseServerClient();
+  const { data } = await supabase
+    .from("users")
+    .select("role, needs_role_selection")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return {
+    role: (data?.role as VerifiedUser["role"]) ?? null,
+    needsRoleSelection: Boolean(data?.needs_role_selection),
+  };
+}
+
 export async function requireVerifiedUser(req: NextRequest): Promise<VerifiedUser> {
   const token = getBearerToken(req);
   const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true);
@@ -103,6 +119,7 @@ export async function requireAuthenticatedUser(req: NextRequest): Promise<Verifi
     try {
       const decoded = await getFirebaseAdminAuth().verifyIdToken(bearerToken, true);
       const canonicalUid = await resolveCanonicalUid(decoded.uid, decoded.email ?? null);
+      const roleMeta = await loadUserRole(canonicalUid);
 
       return {
         uid: canonicalUid,
@@ -110,6 +127,8 @@ export async function requireAuthenticatedUser(req: NextRequest): Promise<Verifi
         name: decoded.name ?? null,
         picture: decoded.picture ?? null,
         provider: decoded.firebase?.sign_in_provider ?? null,
+        role: roleMeta.role,
+        needsRoleSelection: roleMeta.needsRoleSelection,
       };
     } catch {
       throw new AuthRequestError("Invalid authorization token", 401);

@@ -60,6 +60,70 @@ const SpeechWavePanel = dynamic(
   () => import("@/components/speech-wave-panel").then((mod) => mod.SpeechWavePanel),
   { ssr: false }
 );
+const MemoryLanePanel = dynamic(
+  () => import("@/components/memory-lane-panel").then((mod) => mod.MemoryLanePanel),
+  { ssr: false }
+);
+const CognitiveAssessmentPanel = dynamic(
+  () => import("@/components/cognitive-assessment-panel").then((mod) => mod.CognitiveAssessmentPanel),
+  { ssr: false }
+);
+const SafetyCenterPanel = dynamic(
+  () => import("@/components/safety-center-panel").then((mod) => mod.SafetyCenterPanel),
+  { ssr: false }
+);
+const HealthTasksPanel = dynamic(
+  () => import("@/components/health-tasks-panel").then((mod) => mod.HealthTasksPanel),
+  { ssr: false }
+);
+const CaregiverOverviewPanel = dynamic(
+  () => import("@/components/caregiver-overview-panel").then((mod) => mod.CaregiverOverviewPanel),
+  { ssr: false }
+);
+const CaregiverAlertsPanel = dynamic(
+  () => import("@/components/caregiver-alerts-panel").then((mod) => mod.CaregiverAlertsPanel),
+  { ssr: false }
+);
+const CaregiverTasksPanel = dynamic(
+  () => import("@/components/caregiver-tasks-panel").then((mod) => mod.CaregiverTasksPanel),
+  { ssr: false }
+);
+const CaregiverNetworkPanel = dynamic(
+  () => import("@/components/caregiver-network-panel").then((mod) => mod.CaregiverNetworkPanel),
+  { ssr: false }
+);
+const CaregiverInsightsPanel = dynamic(
+  () => import("@/components/caregiver-insights-panel").then((mod) => mod.CaregiverInsightsPanel),
+  { ssr: false }
+);
+const ProviderRosterPanel = dynamic(
+  () => import("@/components/provider-roster-panel").then((mod) => mod.ProviderRosterPanel),
+  { ssr: false }
+);
+const ProviderRecordsPanel = dynamic(
+  () => import("@/components/provider-records-panel").then((mod) => mod.ProviderRecordsPanel),
+  { ssr: false }
+);
+const ProviderNotificationsPanel = dynamic(
+  () => import("@/components/provider-notifications-panel").then((mod) => mod.ProviderNotificationsPanel),
+  { ssr: false }
+);
+const ProviderTrendsPanel = dynamic(
+  () => import("@/components/provider-trends-panel").then((mod) => mod.ProviderTrendsPanel),
+  { ssr: false }
+);
+const ProviderSpeechAnalysisPanel = dynamic(
+  () => import("@/components/provider-speech-analysis-panel").then((mod) => mod.ProviderSpeechAnalysisPanel),
+  { ssr: false }
+);
+const ProviderOrdersPanel = dynamic(
+  () => import("@/components/provider-orders-panel").then((mod) => mod.ProviderOrdersPanel),
+  { ssr: false }
+);
+const UserNotificationsPanel = dynamic(
+  () => import("@/components/user-notifications-panel").then((mod) => mod.UserNotificationsPanel),
+  { ssr: false }
+);
 
 
 
@@ -67,6 +131,13 @@ type AgentStep = {
   name: string;
   status: "pending" | "running" | "done" | "error";
   detail?: string;
+};
+
+type UserRole = "patient" | "caregiver" | "provider";
+
+type RoleProfile = {
+  role: UserRole | null;
+  needsRoleSelection: boolean;
 };
 
 
@@ -800,9 +871,7 @@ export default function DashboardPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [isLowPowerClient, setIsLowPowerClient] = useState(true);
-  const [mountedAuthBypass, setMountedAuthBypass] = useState(false);
-  useEffect(() => setMountedAuthBypass(true), []);
-  const isAuthenticated = Boolean(profile) || mountedAuthBypass;
+  const isAuthenticated = Boolean(profile);
   const {
     entries: historyEntries,
     addEntry,
@@ -823,6 +892,12 @@ export default function DashboardPage() {
   const [backendAwake, setBackendAwake] = useState(true); //ch
   const [splashCompleted, setSplashCompleted] = useState(false);
   const [isBootstrappingAccount, setIsBootstrappingAccount] = useState(false);
+  const [roleProfile, setRoleProfile] = useState<RoleProfile>({
+    role: null,
+    needsRoleSelection: true,
+  });
+  const [roleSaving, setRoleSaving] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
   const sidebarOpen = isMobileLayout ? mobileSidebarOpen : desktopSidebarOpen;
 
@@ -847,11 +922,51 @@ export default function DashboardPage() {
   const isBrainRegionsPage = activePage === "brain regions";
   const isBiomarkersPage = activePage === "biomarkers";
   const isAboutPage = activePage === "about";
-  const isLibraryPage = isDashboardPage || isHistoryPage || isReportsPage || isBrainRegionsPage || isBiomarkersPage || isAboutPage;
-  const topbarTitle = isAboutPage ? "About MnM" : "Cognitive Analysis";
+  const isMemoryLanePage = activePage === "memory lane";
+  const isCognitiveAssessmentsPage = activePage === "cognitive assessments";
+  const isSafetyPage = activePage === "safety center";
+  const isHealthTasksPage = activePage === "health tasks";
+  const isCaregiverDashboard = activePage === "dashboard" && roleProfile.role === "caregiver";
+  const isCaregiverOverview = activePage === "patient overview";
+  const isCaregiverAlerts = activePage === "alerts";
+  const isCaregiverInsights = activePage === "insights";
+  const isCaregiverNetwork = activePage === "care network";
+  const isCaregiverTasks = activePage === "care tasks";
+  const isProviderRoster = activePage === "roster";
+  const isProviderRecords = activePage === "patient records";
+  const isProviderNotifications = activePage === "notifications" && roleProfile.role === "provider";
+  const isProviderOrders = activePage === "orders";
+  const isProviderTrends = activePage === "patient trends";
+  const isUserNotifications = activePage === "notifications" && roleProfile.role !== "provider";
+  const isProviderSpeech = activePage === "speech analysis";
+  const isWorkspacePanel =
+    isDashboardPage ||
+    isHistoryPage ||
+    isReportsPage ||
+    isBrainRegionsPage ||
+    isBiomarkersPage ||
+    isAboutPage ||
+    isMemoryLanePage ||
+    isCognitiveAssessmentsPage ||
+    isSafetyPage ||
+    isHealthTasksPage ||
+    isCaregiverDashboard ||
+    isCaregiverOverview ||
+    isCaregiverAlerts ||
+    isCaregiverInsights ||
+    isCaregiverNetwork ||
+    isCaregiverTasks ||
+    isProviderRoster ||
+    isProviderRecords ||
+    isProviderNotifications ||
+    isProviderOrders ||
+    isProviderTrends ||
+    isUserNotifications ||
+    isProviderSpeech;
+  const topbarTitle = isAboutPage ? "About MnM" : activePage === "analysis" ? "Cognitive Analysis" : activePage.replace(/\b\w/g, (char) => char.toUpperCase());
 
-  const showPhase2 = hasStarted && !isLoading && !isLibraryPage;
-  const showPhase1 = !showPhase2 && !isLibraryPage;
+  const showPhase2 = activePage === "analysis" && hasStarted && !isLoading && !isWorkspacePanel;
+  const showPhase1 = activePage === "analysis" && !showPhase2 && !isWorkspacePanel;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -985,12 +1100,18 @@ export default function DashboardPage() {
     const bootstrap = async () => {
       setIsBootstrappingAccount(true);
       try {
-        await fetch("/api/account/bootstrap", {
+        const res = await fetch("/api/account/bootstrap", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
+        if (res.ok) {
+          const payload = await res.json().catch(() => ({} as { user?: { role?: UserRole | null; needs_role_selection?: boolean } }));
+          const role = payload?.user?.role ?? null;
+          const needsRoleSelection = payload?.user?.needs_role_selection ?? true;
+          setRoleProfile({ role, needsRoleSelection });
+        }
       } catch {
         // Bootstrap failure should not block signed-in users from using the app.
       } finally {
@@ -1006,6 +1127,19 @@ export default function DashboardPage() {
       cancelled = true;
     };
   }, [idToken]);
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    if (profile.role || typeof profile.needsRoleSelection === "boolean") {
+      setRoleProfile({
+        role: profile.role ?? null,
+        needsRoleSelection: profile.needsRoleSelection ?? true,
+      });
+    }
+  }, [profile]);
 
   // Shift+P toggles side panels (kept for power users)
   useEffect(() => {
@@ -1214,7 +1348,38 @@ export default function DashboardPage() {
     setActivations(CORTEX_REGIONS);
     setWordTimestamps(undefined);
     setAudioDuration(undefined);
+    setRoleProfile({ role: null, needsRoleSelection: true });
+    setRoleError(null);
   }, [logOut]);
+
+  const handleRoleSelection = useCallback(async (nextRole: UserRole) => {
+    setRoleSaving(true);
+    setRoleError(null);
+    try {
+      const res = await fetch("/api/account/role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({ role: nextRole }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({} as { error?: string }));
+        setRoleError(payload?.error ?? "Failed to save role.");
+        return;
+      }
+
+      setRoleProfile({ role: nextRole, needsRoleSelection: false });
+      setActivePage(nextRole === "patient" ? "analysis" : "dashboard");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save role.";
+      setRoleError(message);
+    } finally {
+      setRoleSaving(false);
+    }
+  }, [idToken]);
 
   // ── Shared glass style ──────────────────────────────────────────────────────
   const glassStyle: React.CSSProperties = {
@@ -1291,6 +1456,7 @@ export default function DashboardPage() {
               userName={profile?.name ?? "Researcher"}
               userEmail={profile?.email ?? ""}
               onLogout={handleLogout}
+              role={roleProfile.role ?? "patient"}
               onNavItemClick={(item) => {
                 setActivePage(item.title.toLowerCase());
                 if (isMobileLayout) {
@@ -1385,6 +1551,110 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* ══════ PATIENT EXTENSIONS ══════ */}
+            {isMemoryLanePage && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isMemoryLanePage}>
+                <MemoryLanePanel />
+              </div>
+            )}
+
+            {isCognitiveAssessmentsPage && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCognitiveAssessmentsPage}>
+                <CognitiveAssessmentPanel userId={profile?.uid} />
+              </div>
+            )}
+
+            {isSafetyPage && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isSafetyPage}>
+                <SafetyCenterPanel />
+              </div>
+            )}
+
+            {isHealthTasksPage && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isHealthTasksPage}>
+                <HealthTasksPanel />
+              </div>
+            )}
+
+            {/* ══════ CAREGIVER VIEWS ══════ */}
+            {isCaregiverDashboard && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverDashboard}>
+                <CaregiverOverviewPanel />
+              </div>
+            )}
+            {isCaregiverOverview && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverOverview}>
+                <CaregiverOverviewPanel />
+              </div>
+            )}
+
+            {isCaregiverAlerts && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverAlerts}>
+                <CaregiverAlertsPanel />
+              </div>
+            )}
+
+            {isCaregiverInsights && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverInsights}>
+                <CaregiverInsightsPanel />
+              </div>
+            )}
+
+            {isCaregiverNetwork && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverNetwork}>
+                <CaregiverNetworkPanel />
+              </div>
+            )}
+
+            {isCaregiverTasks && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverTasks}>
+                <CaregiverTasksPanel />
+              </div>
+            )}
+
+            {/* ══════ PROVIDER VIEWS ══════ */}
+            {isProviderRoster && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderRoster}>
+                <ProviderRosterPanel />
+              </div>
+            )}
+
+            {isProviderRecords && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderRecords}>
+                <ProviderRecordsPanel />
+              </div>
+            )}
+
+            {isProviderNotifications && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderNotifications}>
+                <ProviderNotificationsPanel />
+              </div>
+            )}
+
+            {isProviderOrders && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderOrders}>
+                <ProviderOrdersPanel />
+              </div>
+            )}
+
+            {isProviderTrends && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderTrends}>
+                <ProviderTrendsPanel />
+              </div>
+            )}
+
+            {isUserNotifications && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isUserNotifications}>
+                <UserNotificationsPanel />
+              </div>
+            )}
+
+            {isProviderSpeech && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderSpeech}>
+                <ProviderSpeechAnalysisPanel />
+              </div>
+            )}
+
             {/* ══════ PHASE 1 — Pre-submission + Processing ══════ */}
             {showPhase1 && (
               <div className="absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-8 overflow-y-auto overflow-x-hidden">
@@ -1433,8 +1703,79 @@ export default function DashboardPage() {
                   </div>
 
                 </div>
+
+                {isAuthenticated && roleProfile.needsRoleSelection && (
+                  <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+                    <div
+                      className="relative z-10 w-full max-w-[720px] rounded-3xl p-5 sm:p-6"
+                      style={{
+                        background: "var(--nt-glass-hi)",
+                        border: "1px solid var(--nt-glass-border)",
+                        boxShadow: "0 24px 64px rgba(6, 16, 28, 0.25)",
+                      }}
+                    >
+                      <div className="mb-4">
+                        <div
+                          className="text-[10px] uppercase tracking-[0.3em]"
+                          style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}
+                        >
+                          profile setup
+                        </div>
+                        <h2
+                          className="mt-2 text-xl sm:text-2xl"
+                          style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)", fontWeight: 700 }}
+                        >
+                          Choose your role to personalize CortexFlow
+                        </h2>
+                        <p className="text-sm mt-2" style={{ color: "var(--nt-text-lo)" }}>
+                          This only sets access and dashboards. You can update details later without losing your history.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {([
+                          { id: "patient", title: "Patient", detail: "Cognitive analysis + memory support" },
+                          { id: "caregiver", title: "Caregiver", detail: "Monitor a single patient" },
+                          { id: "provider", title: "Healthcare", detail: "Manage multiple patients" },
+                        ] as Array<{ id: UserRole; title: string; detail: string }>).map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => void handleRoleSelection(item.id)}
+                            disabled={roleSaving}
+                            className="rounded-2xl border px-4 py-4 text-left transition-opacity hover:opacity-90 disabled:opacity-60"
+                            style={{
+                              borderColor: "var(--nt-divider)",
+                              background: "var(--nt-glass)",
+                            }}
+                          >
+                            <div className="text-sm" style={{ color: "var(--nt-text-hi)", fontWeight: 600 }}>
+                              {item.title}
+                            </div>
+                            <div className="text-xs mt-2" style={{ color: "var(--nt-text-xs)" }}>
+                              {item.detail}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {roleError && (
+                        <div className="mt-4 text-xs" style={{ color: "#D85A30" }}>
+                          {roleError}
+                        </div>
+                      )}
+
+                      {roleSaving && (
+                        <div className="mt-4 text-xs" style={{ color: "var(--nt-text-ghost)" }}>
+                          Saving your role...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
 
             {/* ══════ PHASE 2 — Brain left · Report right · Input bottom ══════ */}
             {showPhase2 && (

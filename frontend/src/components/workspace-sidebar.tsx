@@ -2,7 +2,7 @@
 import * as React from "react";
 import { Activity, Brain, Clock, FileText, HelpCircle, LayoutDashboard, Mic, Plus } from "lucide-react";
 
-type NavItem = { title: string; icon: React.ComponentType<{ size?: number; className?: string }>; url: string };
+type NavItem = { title: string; icon: React.ComponentType<{ size?: number; className?: string }>; url: string; badge?: number };
 {}
 type WorkspaceSidebarProps = {
   onNewAnalysis?: () => void;
@@ -11,6 +11,7 @@ type WorkspaceSidebarProps = {
   userName?: string;
   userEmail?: string;
   onLogout?: () => void;
+  role?: "patient" | "caregiver" | "provider" | null;
 };
 {}
 export function WorkspaceSidebar({
@@ -20,19 +21,72 @@ export function WorkspaceSidebar({
   userName = "Researcher",
   userEmail = "",
   onLogout,
+  role = "patient",
 }: WorkspaceSidebarProps) {
   const [showAccountActions, setShowAccountActions] = React.useState(false);
+  const [notificationCount, setNotificationCount] = React.useState(0);
 
-  const navMain: NavItem[] = [
-    { title: "New Analysis", icon: Plus, url: "#" },
-    { title: "Dashboard", icon: LayoutDashboard, url: "#" },
-    { title: "History", icon: Clock, url: "#" },
-    { title: "Reports", icon: FileText, url: "#" },
-  ];
+  const loadNotificationCount = React.useCallback(async () => {
+    if (role !== "patient" && role !== "caregiver") {
+      setNotificationCount(0);
+      return;
+    }
 
-  const navSecondary: NavItem[] = [
-    { title: "About", icon: HelpCircle, url: "#" },
-  ];
+    try {
+      const res = await fetch("/api/notifications", { method: "GET", cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json() as { notifications?: Array<{ read_at: string | null }> };
+      const unread = (data.notifications ?? []).filter((item) => !item.read_at).length;
+      setNotificationCount(unread);
+    } catch {
+      setNotificationCount(0);
+    }
+  }, [role]);
+
+  React.useEffect(() => {
+    void loadNotificationCount();
+  }, [loadNotificationCount]);
+
+  const navMain: NavItem[] = role === "caregiver"
+    ? [
+      { title: "Dashboard", icon: LayoutDashboard, url: "#" },
+      { title: "Patient Overview", icon: Brain, url: "#" },
+      { title: "Insights", icon: Brain, url: "#" },
+      { title: "Care Network", icon: Activity, url: "#" },
+      { title: "Alerts", icon: Activity, url: "#" },
+      { title: "Notifications", icon: Activity, url: "#", badge: notificationCount },
+      { title: "Care Tasks", icon: Clock, url: "#" },
+      { title: "Reports", icon: FileText, url: "#" },
+    ]
+    : role === "provider"
+      ? [
+        { title: "Roster", icon: LayoutDashboard, url: "#" },
+        { title: "Patient Records", icon: FileText, url: "#" },
+        { title: "Patient Trends", icon: Brain, url: "#" },
+        { title: "Orders", icon: Clock, url: "#" },
+        { title: "Notifications", icon: Activity, url: "#" },
+        { title: "Reports", icon: FileText, url: "#" },
+        { title: "Speech Analysis", icon: Brain, url: "#" },
+      ]
+      : [
+        { title: "New Analysis", icon: Plus, url: "#" },
+        { title: "Dashboard", icon: LayoutDashboard, url: "#" },
+        { title: "History", icon: Clock, url: "#" },
+        { title: "Reports", icon: FileText, url: "#" },
+      ];
+
+  const navSecondary: NavItem[] = role === "patient"
+    ? [
+      { title: "Memory Lane", icon: HelpCircle, url: "#" },
+      { title: "Cognitive Assessments", icon: Brain, url: "#" },
+      { title: "Notifications", icon: Activity, url: "#", badge: notificationCount },
+      { title: "Safety Center", icon: Activity, url: "#" },
+      { title: "Health Tasks", icon: Clock, url: "#" },
+      { title: "About", icon: HelpCircle, url: "#" },
+    ]
+    : [
+      { title: "About", icon: HelpCircle, url: "#" },
+    ];
 
   const handleClick = (item: NavItem) => {
     if (item.title === "New Analysis") onNewAnalysis?.();
@@ -52,17 +106,19 @@ export function WorkspaceSidebar({
       </div>
 {}
       {/* New Analysis button */}
-      <button
-        onClick={() => handleClick(navMain[0])}
-        className="nt-nav-btn mx-1 mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium"
-        style={{ border: "1px solid var(--nt-glass-border)" }}
-      >
-        <Mic size={14} />
-        New Analysis
-      </button>
+      {role === "patient" && (
+        <button
+          onClick={() => handleClick(navMain[0])}
+          className="nt-nav-btn mx-1 mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium"
+          style={{ border: "1px solid var(--nt-glass-border)" }}
+        >
+          <Mic size={14} />
+          New Analysis
+        </button>
+      )}
       {/* Main nav */}
       <div className="flex flex-col gap-0.5 px-1">
-        {navMain.slice(1).map((item) => {
+        {(role === "patient" ? navMain.slice(1) : navMain).map((item) => {
           const Icon = item.icon;
           const isActive = activePage === item.title.toLowerCase();
           return (
@@ -72,7 +128,15 @@ export function WorkspaceSidebar({
               className={`nt-nav-btn flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm w-full text-left ${isActive ? "nt-active" : ""}`}
             >
               <Icon size={15} />
-              {item.title}
+              <span className="flex-1">{item.title}</span>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ background: "rgba(29,158,117,0.18)", color: "#1D9E75" }}
+                >
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}
@@ -84,28 +148,30 @@ export function WorkspaceSidebar({
           className="text-[10px] uppercase tracking-widest font-medium"
           style={{ color: "var(--nt-text-ghost)" }}
         >
-          Analysis
+          {role === "patient" ? "Analysis" : "Tools"}
         </span>
       </div>
 {}
-      <div className="flex flex-col gap-0.5 px-1">
-        {[
-          { title: "Brain Regions", icon: Brain, url: "#" },
-          { title: "Biomarkers", icon: Activity, url: "#" },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.title}
-              onClick={() => handleClick(item)}
-              className="nt-nav-btn flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm w-full text-left"
-            >
-              <Icon size={15} />
-              {item.title}
-            </button>
-          );
-        })}
-      </div>
+      {role === "patient" && (
+        <div className="flex flex-col gap-0.5 px-1">
+          {[
+            { title: "Brain Regions", icon: Brain, url: "#" },
+            { title: "Biomarkers", icon: Activity, url: "#" },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.title}
+                onClick={() => handleClick(item)}
+                className="nt-nav-btn flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm w-full text-left"
+              >
+                <Icon size={15} />
+                {item.title}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex-1" />
 {}
@@ -120,7 +186,15 @@ export function WorkspaceSidebar({
               className="nt-nav-btn flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm w-full text-left"
             >
               <Icon size={15} />
-              {item.title}
+              <span className="flex-1">{item.title}</span>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ background: "rgba(29,158,117,0.18)", color: "#1D9E75" }}
+                >
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}
