@@ -167,8 +167,6 @@ export function ProviderTrendsPanel() {
       setMetrics(data.metrics ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load patient trends";
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load patient trends";
       setError(message);
     } finally {
       setIsLoading(false);
