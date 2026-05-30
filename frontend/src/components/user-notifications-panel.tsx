@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type NotificationItem = {
   id: string;
@@ -19,6 +20,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function UserNotificationsPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function UserNotificationsPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/notifications", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/notifications", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load notifications");
@@ -45,8 +47,9 @@ export function UserNotificationsPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadNotifications();
-  }, [loadNotifications]);
+  }, [loadNotifications, idToken, isReady]);
 
   const unreadCount = useMemo(
     () => notifications.filter((item) => !item.read_at).length,
@@ -54,7 +57,7 @@ export function UserNotificationsPanel() {
   );
 
   const markRead = useCallback(async (notificationId: string) => {
-    const res = await fetch(`/api/notifications/${notificationId}`, {
+    const res = await authFetch(`/api/notifications/${notificationId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ read: true }),

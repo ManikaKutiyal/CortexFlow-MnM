@@ -449,7 +449,7 @@ export function MissionControlView({ entries, onStartAnalysis }: MissionControlV
               ))}
             </div>
           </div>
-          <div className="h-[168px] sm:h-[200px]">
+          <div className="h-[168px] sm:h-[200px]" style={{ minHeight: 168 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <defs>

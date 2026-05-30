@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type ProviderPatient = {
   id: string;
@@ -88,6 +89,7 @@ function shortDate(value: string) {
 }
 
 export function ProviderSpeechAnalysisPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [summary, setSummary] = useState<SpeechSummary | null>(null);
@@ -104,7 +106,7 @@ export function ProviderSpeechAnalysisPanel() {
 
     try {
       const query = patientId ? `?patientId=${encodeURIComponent(patientId)}` : "";
-      const res = await fetch(`/api/provider/speech-analysis${query}`, { method: "GET", cache: "no-store" });
+      const res = await authFetch(`/api/provider/speech-analysis${query}`, { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load speech analysis");
@@ -127,13 +129,14 @@ export function ProviderSpeechAnalysisPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadSpeechAnalysis();
-  }, [loadSpeechAnalysis]);
+  }, [loadSpeechAnalysis, idToken, isReady]);
 
   useEffect(() => {
-    if (!selectedPatientId) return;
+    if (!isReady || !selectedPatientId) return;
     void loadSpeechAnalysis(selectedPatientId);
-  }, [selectedPatientId, loadSpeechAnalysis]);
+  }, [selectedPatientId, loadSpeechAnalysis, idToken, isReady]);
 
   const selectedSession = useMemo(() => {
     return sessions.find((session) => session.id === selectedSessionId) ?? sessions[0] ?? null;
@@ -218,7 +221,7 @@ export function ProviderSpeechAnalysisPanel() {
                 <span style={{ color: "var(--nt-text-ghost)", fontSize: 10 }}>{summary?.sessions_count ?? 0} sessions</span>
               </div>
               {sessionTrend.length > 1 ? (
-                <div className="h-[230px]">
+                <div className="h-[230px]" style={{ minHeight: 230 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={sessionTrend} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                       <CartesianGrid stroke="var(--nt-divider)" strokeDasharray="3 3" />
@@ -241,7 +244,7 @@ export function ProviderSpeechAnalysisPanel() {
             <div className="rounded-2xl p-4" style={glassCard}>
               <div className="mb-3" style={{ color: "var(--nt-text-hi)", fontSize: 13, fontWeight: 600 }}>Domain Profile</div>
               {domainChart.length ? (
-                <div className="h-[230px]">
+                <div className="h-[230px]" style={{ minHeight: 230 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={domainChart} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                       <CartesianGrid stroke="var(--nt-divider)" strokeDasharray="3 3" />

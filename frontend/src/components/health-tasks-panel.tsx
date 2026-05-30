@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type CareTask = {
   id: string;
@@ -51,6 +52,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function HealthTasksPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [tasks, setTasks] = useState<CareTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +121,7 @@ export function HealthTasksPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/health-tasks", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/health-tasks", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load tasks");
@@ -136,8 +138,9 @@ export function HealthTasksPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadTasks();
-  }, [loadTasks]);
+  }, [loadTasks, idToken, isReady]);
 
   const summary = useMemo(() => {
     if (!tasks.length) return "No tasks yet.";
@@ -162,7 +165,7 @@ export function HealthTasksPanel() {
     };
 
     try {
-      const res = await fetch("/api/health-tasks", {
+      const res = await authFetch("/api/health-tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -201,7 +204,7 @@ export function HealthTasksPanel() {
     setVoiceReminder(null);
 
     try {
-      const res = await fetch("/api/health-tasks/voice-reminder", {
+      const res = await authFetch("/api/health-tasks/voice-reminder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: voiceText.trim() }),
@@ -249,7 +252,7 @@ export function HealthTasksPanel() {
   }, [voiceReminder]);
 
   const updateTaskStatus = useCallback(async (taskId: string, status: CareTask["status"]) => {
-    const res = await fetch(`/api/health-tasks/${taskId}`, {
+    const res = await authFetch(`/api/health-tasks/${taskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),

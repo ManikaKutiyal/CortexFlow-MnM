@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuthFetch } from "@/hooks/useAuthFetch";
 
 type PatientRecord = {
   id: string;
@@ -20,6 +21,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function ProviderRecordsPanel() {
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [records, setRecords] = useState<PatientRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function ProviderRecordsPanel() {
     setError(null);
 
     try {
-      const res = await fetch("/api/provider/records", { method: "GET", cache: "no-store" });
+      const res = await authFetch("/api/provider/records", { method: "GET", cache: "no-store" });
       if (!res.ok) {
         const message = await res.text();
         throw new Error(message || "Failed to load records");
@@ -46,8 +48,9 @@ export function ProviderRecordsPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadRecords();
-  }, [loadRecords]);
+  }, [loadRecords, idToken, isReady]);
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden" style={{ padding: "18px" }}>
