@@ -218,7 +218,7 @@ export function ProviderSpeechAnalysisPanel() {
                 <span style={{ color: "var(--nt-text-ghost)", fontSize: 10 }}>{summary?.sessions_count ?? 0} sessions</span>
               </div>
               {sessionTrend.length > 1 ? (
-                <div className="h-[230px]">
+                <div className="h-[230px]" style={{ minHeight: 230 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={sessionTrend} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                       <CartesianGrid stroke="var(--nt-divider)" strokeDasharray="3 3" />
@@ -241,7 +241,7 @@ export function ProviderSpeechAnalysisPanel() {
             <div className="rounded-2xl p-4" style={glassCard}>
               <div className="mb-3" style={{ color: "var(--nt-text-hi)", fontSize: 13, fontWeight: 600 }}>Domain Profile</div>
               {domainChart.length ? (
-                <div className="h-[230px]">
+                <div className="h-[230px]" style={{ minHeight: 230 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={domainChart} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                       <CartesianGrid stroke="var(--nt-divider)" strokeDasharray="3 3" />

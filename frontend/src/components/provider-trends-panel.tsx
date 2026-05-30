@@ -355,7 +355,7 @@ export function ProviderTrendsPanel() {
                 <span style={{ color: "var(--nt-text-ghost)", fontSize: 10 }}>{series.length} sessions</span>
               </div>
               {chartData.length > 1 ? (
-                <div className="h-[220px]">
+                <div className="h-[220px]" style={{ minHeight: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                       <CartesianGrid stroke="var(--nt-divider)" strokeDasharray="3 3" />
