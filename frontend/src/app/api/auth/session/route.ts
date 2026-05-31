@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
         providerId: user.provider ?? "password",
         role: user.role ?? null,
         needsRoleSelection: user.needsRoleSelection ?? true,
+        uniquePatientId: user.uniquePatientId ?? null,
       },
     });
   } catch (error) {

@@ -124,6 +124,18 @@ const UserNotificationsPanel = dynamic(
   () => import("@/components/user-notifications-panel").then((mod) => mod.UserNotificationsPanel),
   { ssr: false }
 );
+const CaregiverPatientLinkPanel = dynamic(
+  () => import("@/components/caregiver-patient-link-panel").then((mod) => mod.CaregiverPatientLinkPanel),
+  { ssr: false }
+);
+const PatientAccessRequestsPanel = dynamic(
+  () => import("@/components/patient-access-requests-panel").then((mod) => mod.PatientAccessRequestsPanel),
+  { ssr: false }
+);
+const ProviderPatientAddPanel = dynamic(
+  () => import("@/components/provider-patient-add-panel").then((mod) => mod.ProviderPatientAddPanel),
+  { ssr: false }
+);
 
 
 
@@ -138,6 +150,7 @@ type UserRole = "patient" | "caregiver" | "provider";
 type RoleProfile = {
   role: UserRole | null;
   needsRoleSelection: boolean;
+  uniquePatientId: string | null;
 };
 
 
@@ -894,7 +907,8 @@ export default function DashboardPage() {
   const [isBootstrappingAccount, setIsBootstrappingAccount] = useState(false);
   const [roleProfile, setRoleProfile] = useState<RoleProfile>({
     role: null,
-    needsRoleSelection: true,
+    needsRoleSelection: false,
+    uniquePatientId: null,
   });
   const [roleSaving, setRoleSaving] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
@@ -932,6 +946,7 @@ export default function DashboardPage() {
   const isCaregiverInsights = activePage === "insights";
   const isCaregiverNetwork = activePage === "care network";
   const isCaregiverTasks = activePage === "care tasks";
+  const isCaregiverPatientLink = activePage === "patient link";
   const isProviderRoster = activePage === "roster";
   const isProviderRecords = activePage === "patient records";
   const isProviderNotifications = activePage === "notifications" && roleProfile.role === "provider";
@@ -939,6 +954,8 @@ export default function DashboardPage() {
   const isProviderTrends = activePage === "patient trends";
   const isUserNotifications = activePage === "notifications" && roleProfile.role !== "provider";
   const isProviderSpeech = activePage === "speech analysis";
+  const isProviderPatientAdd = activePage === "manage roster";
+  const isPatientAccessRequests = activePage === "access requests";
   const isWorkspacePanel =
     isDashboardPage ||
     isHistoryPage ||
@@ -956,13 +973,16 @@ export default function DashboardPage() {
     isCaregiverInsights ||
     isCaregiverNetwork ||
     isCaregiverTasks ||
+    isCaregiverPatientLink ||
     isProviderRoster ||
     isProviderRecords ||
     isProviderNotifications ||
     isProviderOrders ||
     isProviderTrends ||
     isUserNotifications ||
-    isProviderSpeech;
+    isProviderSpeech ||
+    isProviderPatientAdd ||
+    isPatientAccessRequests;
   const topbarTitle = isAboutPage ? "About MnM" : activePage === "analysis" ? "Cognitive Analysis" : activePage.replace(/\b\w/g, (char) => char.toUpperCase());
 
   const showPhase2 = activePage === "analysis" && hasStarted && !isLoading && !isWorkspacePanel;
@@ -1107,10 +1127,11 @@ export default function DashboardPage() {
           },
         });
         if (res.ok) {
-          const payload = await res.json().catch(() => ({} as { user?: { role?: UserRole | null; needs_role_selection?: boolean } }));
+          const payload = await res.json().catch(() => ({} as { user?: { role?: UserRole | null; needs_role_selection?: boolean; unique_patient_id?: string | null } }));
           const role = payload?.user?.role ?? null;
           const needsRoleSelection = payload?.user?.needs_role_selection ?? true;
-          setRoleProfile({ role, needsRoleSelection });
+          const uniquePatientId = payload?.user?.unique_patient_id ?? null;
+          setRoleProfile({ role, needsRoleSelection, uniquePatientId });
         }
       } catch {
         // Bootstrap failure should not block signed-in users from using the app.
@@ -1134,10 +1155,11 @@ export default function DashboardPage() {
     }
 
     if (profile.role || typeof profile.needsRoleSelection === "boolean") {
-      setRoleProfile({
+      setRoleProfile((prev) => ({
         role: profile.role ?? null,
         needsRoleSelection: profile.needsRoleSelection ?? true,
-      });
+        uniquePatientId: ("uniquePatientId" in profile) ? (profile as any).uniquePatientId : prev.uniquePatientId,
+      }));
     }
   }, [profile]);
 
@@ -1348,7 +1370,7 @@ export default function DashboardPage() {
     setActivations(CORTEX_REGIONS);
     setWordTimestamps(undefined);
     setAudioDuration(undefined);
-    setRoleProfile({ role: null, needsRoleSelection: true });
+    setRoleProfile({ role: null, needsRoleSelection: true, uniquePatientId: null });
     setRoleError(null);
   }, [logOut]);
 
@@ -1356,7 +1378,7 @@ export default function DashboardPage() {
     setRoleSaving(true);
     setRoleError(null);
     try {
-      const res = await fetch("/api/account/role", {
+      const res = await fetch("/api/account/set-role", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1364,14 +1386,13 @@ export default function DashboardPage() {
         },
         body: JSON.stringify({ role: nextRole }),
       });
-
       if (!res.ok) {
         const payload = await res.json().catch(() => ({} as { error?: string }));
         setRoleError(payload?.error ?? "Failed to save role.");
         return;
       }
-
-      setRoleProfile({ role: nextRole, needsRoleSelection: false });
+      const payload = await res.json().catch(() => ({} as { user?: { unique_patient_id?: string | null } }));
+      setRoleProfile({ role: nextRole, needsRoleSelection: false, uniquePatientId: payload?.user?.unique_patient_id ?? null });
       setActivePage(nextRole === "patient" ? "analysis" : "dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save role.";
@@ -1457,6 +1478,7 @@ export default function DashboardPage() {
               userEmail={profile?.email ?? ""}
               onLogout={handleLogout}
               role={roleProfile.role ?? "patient"}
+              uniquePatientId={roleProfile.uniquePatientId}
               onNavItemClick={(item) => {
                 setActivePage(item.title.toLowerCase());
                 if (isMobileLayout) {
@@ -1611,6 +1633,16 @@ export default function DashboardPage() {
                 <CaregiverTasksPanel />
               </div>
             )}
+            {isCaregiverPatientLink && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverPatientLink}>
+                <CaregiverPatientLinkPanel />
+              </div>
+            )}
+            {isPatientAccessRequests && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isPatientAccessRequests}>
+                <PatientAccessRequestsPanel />
+              </div>
+            )}
 
             {/* ══════ PROVIDER VIEWS ══════ */}
             {isProviderRoster && (
@@ -1652,6 +1684,11 @@ export default function DashboardPage() {
             {isProviderSpeech && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderSpeech}>
                 <ProviderSpeechAnalysisPanel />
+              </div>
+            )}
+            {isProviderPatientAdd && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderPatientAdd}>
+                <ProviderPatientAddPanel />
               </div>
             )}
 
@@ -1706,68 +1743,120 @@ export default function DashboardPage() {
 
                 {isAuthenticated && roleProfile.needsRoleSelection && (
                   <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
-                    <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px]" />
                     <div
-                      className="relative z-10 w-full max-w-[720px] rounded-3xl p-5 sm:p-6"
+                      className="relative z-10 w-full max-w-[780px] rounded-3xl p-6 sm:p-8 animate-scale-in"
                       style={{
                         background: "var(--nt-glass-hi)",
                         border: "1px solid var(--nt-glass-border)",
-                        boxShadow: "0 24px 64px rgba(6, 16, 28, 0.25)",
+                        boxShadow: "0 32px 80px rgba(6, 16, 28, 0.32), 0 0 0 1px rgba(255,255,255,0.05)",
                       }}
                     >
-                      <div className="mb-4">
+                      <div className="flex items-center gap-3 mb-2">
                         <div
-                          className="text-[10px] uppercase tracking-[0.3em]"
+                          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: "linear-gradient(135deg, rgba(43,208,189,0.2), rgba(59,130,246,0.2))", border: "1px solid rgba(43,208,189,0.25)" }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 1L14.5 5v6L8 15 1.5 11V5L8 1z" stroke="currentColor" strokeWidth="1.2" style={{ color: "var(--nt-text-lo)" }} />
+                            <circle cx="8" cy="8" r="2.5" fill="currentColor" style={{ color: "rgba(43,208,189,0.6)" }} />
+                          </svg>
+                        </div>
+                        <div
+                          className="text-[9px] uppercase tracking-[0.3em]"
                           style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}
                         >
-                          profile setup
+                          cortexflow · profile setup
                         </div>
-                        <h2
-                          className="mt-2 text-xl sm:text-2xl"
-                          style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)", fontWeight: 700 }}
-                        >
-                          Choose your role to personalize CortexFlow
-                        </h2>
-                        <p className="text-sm mt-2" style={{ color: "var(--nt-text-lo)" }}>
-                          This only sets access and dashboards. You can update details later without losing your history.
-                        </p>
                       </div>
-
+                      <h2
+                        className="text-xl sm:text-2xl mb-1"
+                        style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)", fontWeight: 700, letterSpacing: "-0.02em" }}
+                      >
+                        Select your role
+                      </h2>
+                      <p className="text-sm mb-6" style={{ color: "var(--nt-text-lo)", lineHeight: 1.6 }}>
+                        Your role determines your dashboard layout and feature access. This choice is permanent to maintain data integrity.
+                      </p>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {([
-                          { id: "patient", title: "Patient", detail: "Cognitive analysis + memory support" },
-                          { id: "caregiver", title: "Caregiver", detail: "Monitor a single patient" },
-                          { id: "provider", title: "Healthcare", detail: "Manage multiple patients" },
-                        ] as Array<{ id: UserRole; title: string; detail: string }>).map((item) => (
+                          {
+                            id: "patient" as UserRole,
+                            title: "Patient",
+                            detail: "Full cognitive analysis suite, memory lane, health tasks, and safety tools",
+                            icon: (
+                              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                                <circle cx="11" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+                                <path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                              </svg>
+                            ),
+                            accent: "linear-gradient(135deg, #14b8a6, #3b82f6)",
+                          },
+                          {
+                            id: "caregiver" as UserRole,
+                            title: "Caregiver",
+                            detail: "Monitor one patient's metrics, receive SOS alerts, send reminders",
+                            icon: (
+                              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                                <path d="M11 4C7 4 4 7.5 4 10.5C4 16 11 20 11 20C11 20 18 16 18 10.5C18 7.5 15 4 11 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                                <circle cx="11" cy="10" r="2" stroke="currentColor" strokeWidth="1.5" />
+                              </svg>
+                            ),
+                            accent: "linear-gradient(135deg, #f59e0b, #ef4444)",
+                          },
+                          {
+                            id: "provider" as UserRole,
+                            title: "Healthcare Provider",
+                            detail: "Manage multiple patients, review trends, write orders, track cohorts",
+                            icon: (
+                              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                                <rect x="3" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                                <path d="M11 9v4M9 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                <path d="M7 5V3a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="1.5" />
+                              </svg>
+                            ),
+                            accent: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                          },
+                        ]).map((item, i) => (
                           <button
                             key={item.id}
                             onClick={() => void handleRoleSelection(item.id)}
                             disabled={roleSaving}
-                            className="rounded-2xl border px-4 py-4 text-left transition-opacity hover:opacity-90 disabled:opacity-60"
+                            className="group relative rounded-2xl text-left disabled:opacity-50 glass-card-hover animate-stagger-in overflow-hidden"
                             style={{
-                              borderColor: "var(--nt-divider)",
+                              animationDelay: `${i * 80}ms`,
+                              border: "1px solid var(--nt-divider)",
                               background: "var(--nt-glass)",
                             }}
                           >
-                            <div className="text-sm" style={{ color: "var(--nt-text-hi)", fontWeight: 600 }}>
-                              {item.title}
-                            </div>
-                            <div className="text-xs mt-2" style={{ color: "var(--nt-text-xs)" }}>
-                              {item.detail}
+                            <div className="h-1 w-full" style={{ background: item.accent }} />
+                            <div className="px-4 py-4">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                                style={{ background: "var(--nt-hover)", border: "1px solid var(--nt-divider)", color: "var(--nt-text-lo)" }}
+                              >
+                                {item.icon}
+                              </div>
+                              <div className="text-sm font-semibold mb-1.5" style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)" }}>
+                                {item.title}
+                              </div>
+                              <div className="text-[11px] leading-relaxed" style={{ color: "var(--nt-text-xs)" }}>
+                                {item.detail}
+                              </div>
                             </div>
                           </button>
                         ))}
                       </div>
-
                       {roleError && (
-                        <div className="mt-4 text-xs" style={{ color: "#D85A30" }}>
-                          {roleError}
+                        <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(216,90,48,0.08)", border: "1px solid rgba(216,90,48,0.2)" }}>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#D85A30" strokeWidth="1.2" /><path d="M7 4v3M7 9v.5" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                          <span className="text-xs" style={{ color: "#D85A30" }}>{roleError}</span>
                         </div>
                       )}
-
                       {roleSaving && (
-                        <div className="mt-4 text-xs" style={{ color: "var(--nt-text-ghost)" }}>
-                          Saving your role...
+                        <div className="mt-4 flex items-center gap-2">
+                          <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--nt-text-ghost)", borderTopColor: "transparent" }} />
+                          <span className="text-xs" style={{ color: "var(--nt-text-ghost)" }}>Configuring your workspace…</span>
                         </div>
                       )}
                     </div>
