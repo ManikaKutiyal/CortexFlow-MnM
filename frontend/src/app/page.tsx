@@ -1560,7 +1560,7 @@ export default function DashboardPage() {
 
             {isCognitiveAssessmentsPage && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCognitiveAssessmentsPage}>
-                <CognitiveAssessmentPanel userId={profile?.uid} />
+                <CognitiveAssessmentPanel />
               </div>
             )}
 
