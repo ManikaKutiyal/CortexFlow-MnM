@@ -816,6 +816,9 @@ async def compose_safe_summary(state: AnalysisState, risk_level: str) -> tuple[s
     return summary, model_meta
 
 
+@app.get("/")
+async def root() -> dict[str, Any]:
+    return {"service": "cortexflow-backend", "status": "ok", "version": "1.0.0"}
 @app.get("/health")
 async def health() -> dict[str, Any]:
     available = await fetch_available_models()
