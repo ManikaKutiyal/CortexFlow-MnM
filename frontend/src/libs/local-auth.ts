@@ -10,6 +10,7 @@ export type SessionUser = {
   provider: string | null;
   role: "patient" | "caregiver" | "provider" | null;
   needsRoleSelection: boolean;
+  uniquePatientId: string | null;
 };
 
 export const AUTH_SESSION_COOKIE = "cortexflow_session";
@@ -97,7 +98,7 @@ export async function getSessionUserFromRequest(req: NextRequest): Promise<Sessi
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("auth_sessions")
-    .select("id, user_id, expires_at, users!inner(id, email, display_name, photo_url, provider, role, needs_role_selection)")
+    .select("id, user_id, expires_at, users!inner(id, email, display_name, photo_url, provider, role, needs_role_selection, unique_patient_id)")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -123,6 +124,7 @@ export async function getSessionUserFromRequest(req: NextRequest): Promise<Sessi
     provider: rawUser.provider ?? null,
     role: rawUser.role ?? null,
     needsRoleSelection: Boolean(rawUser.needs_role_selection),
+    uniquePatientId: rawUser.unique_patient_id ?? null,
   };
 }
 

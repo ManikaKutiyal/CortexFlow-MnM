@@ -5,6 +5,15 @@ import { getSupabaseServerClient } from "@/libs/supabase-server";
 
 export const runtime = "nodejs";
 
+function generatePatientId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 type UserRow = {
   id: string;
   email: string | null;
@@ -13,6 +22,7 @@ type UserRow = {
   provider: string | null;
   role: "patient" | "caregiver" | "provider" | null;
   needs_role_selection: boolean | null;
+  unique_patient_id: string | null;
   created_at: string;
 };
 
@@ -61,7 +71,7 @@ export async function POST(req: NextRequest) {
 
       const { data: existingRows, error: existingRowsError } = await supabase
         .from("users")
-        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, created_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, unique_patient_id, created_at")
         .eq("email", normalizedEmail)
         .order("created_at", { ascending: true });
 
@@ -73,7 +83,7 @@ export async function POST(req: NextRequest) {
     } else {
       const { data: existingUserById } = await supabase
         .from("users")
-        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, created_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, unique_patient_id, created_at")
         .eq("id", user.uid)
         .maybeSingle();
 
@@ -95,23 +105,31 @@ export async function POST(req: NextRequest) {
       provider: string | null;
       role: "patient" | "caregiver" | "provider" | null;
       needs_role_selection: boolean | null;
+      unique_patient_id: string | null;
       last_login_at: string | null;
     } | null = null;
     let error: { message: string } | null = null;
 
     if (canonicalUser) {
+      const updates: Record<string, unknown> = {
+        email,
+        display_name: displayName,
+        photo_url: photoUrl,
+        provider,
+        last_login_at: now,
+        updated_at: now,
+      };
+      
+      // Auto-generate unique_patient_id for existing patients if missing
+      if (canonicalUser.role === "patient" && !canonicalUser.unique_patient_id) {
+        updates.unique_patient_id = generatePatientId();
+      }
+
       const result = await supabase
         .from("users")
-        .update({
-          email,
-          display_name: displayName,
-          photo_url: photoUrl,
-          provider,
-          last_login_at: now,
-          updated_at: now,
-        })
+        .update(updates)
         .eq("id", canonicalId)
-        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, last_login_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, unique_patient_id, last_login_at")
         .single();
 
       data = result.data;
@@ -128,7 +146,7 @@ export async function POST(req: NextRequest) {
           last_login_at: now,
           updated_at: now,
         })
-        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, last_login_at")
+        .select("id, email, display_name, photo_url, provider, role, needs_role_selection, unique_patient_id, last_login_at")
         .single();
 
       data = result.data;
