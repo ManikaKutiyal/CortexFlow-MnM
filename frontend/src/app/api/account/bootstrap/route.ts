@@ -119,8 +119,9 @@ export async function POST(req: NextRequest) {
         last_login_at: now,
         updated_at: now,
       };
-      
-      // Auto-generate unique_patient_id for existing patients if missing
+      if (canonicalUser.role && (canonicalUser.needs_role_selection === null || canonicalUser.needs_role_selection === true)) {
+        updates.needs_role_selection = false;
+      }
       if (canonicalUser.role === "patient" && !canonicalUser.unique_patient_id) {
         updates.unique_patient_id = generatePatientId();
       }
@@ -143,6 +144,7 @@ export async function POST(req: NextRequest) {
           display_name: displayName,
           photo_url: photoUrl,
           provider,
+          needs_role_selection: true,
           last_login_at: now,
           updated_at: now,
         })
