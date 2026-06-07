@@ -1127,11 +1127,15 @@ export default function DashboardPage() {
           },
         });
         if (res.ok) {
-          const payload = await res.json().catch(() => ({} as { user?: { role?: UserRole | null; needs_role_selection?: boolean; unique_patient_id?: string | null } }));
+          const payload = await res.json().catch(() => ({} as { user?: { role?: UserRole | null; needs_role_selection?: boolean | null; unique_patient_id?: string | null } }));
           const role = payload?.user?.role ?? null;
-          const needsRoleSelection = payload?.user?.needs_role_selection ?? true;
+          const dbFlag = payload?.user?.needs_role_selection;
+          const needsRoleSelection = role ? false : (dbFlag === true);
           const uniquePatientId = payload?.user?.unique_patient_id ?? null;
           setRoleProfile({ role, needsRoleSelection, uniquePatientId });
+          if (role && !needsRoleSelection) {
+            setActivePage(role === "patient" ? "analysis" : "dashboard");
+          }
         }
       } catch {
         // Bootstrap failure should not block signed-in users from using the app.
@@ -1153,11 +1157,10 @@ export default function DashboardPage() {
     if (!profile) {
       return;
     }
-
-    if (profile.role || typeof profile.needsRoleSelection === "boolean") {
+    if (profile.role) {
       setRoleProfile((prev) => ({
         role: profile.role ?? null,
-        needsRoleSelection: profile.needsRoleSelection ?? true,
+        needsRoleSelection: prev.needsRoleSelection,
         uniquePatientId: ("uniquePatientId" in profile) ? (profile as any).uniquePatientId : prev.uniquePatientId,
       }));
     }
@@ -1370,7 +1373,7 @@ export default function DashboardPage() {
     setActivations(CORTEX_REGIONS);
     setWordTimestamps(undefined);
     setAudioDuration(undefined);
-    setRoleProfile({ role: null, needsRoleSelection: true, uniquePatientId: null });
+    setRoleProfile({ role: null, needsRoleSelection: false, uniquePatientId: null });
     setRoleError(null);
   }, [logOut]);
 
@@ -1741,127 +1744,7 @@ export default function DashboardPage() {
 
                 </div>
 
-                {isAuthenticated && roleProfile.needsRoleSelection && (
-                  <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px]" />
-                    <div
-                      className="relative z-10 w-full max-w-[780px] rounded-3xl p-6 sm:p-8 animate-scale-in"
-                      style={{
-                        background: "var(--nt-glass-hi)",
-                        border: "1px solid var(--nt-glass-border)",
-                        boxShadow: "0 32px 80px rgba(6, 16, 28, 0.32), 0 0 0 1px rgba(255,255,255,0.05)",
-                      }}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div
-                          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: "linear-gradient(135deg, rgba(43,208,189,0.2), rgba(59,130,246,0.2))", border: "1px solid rgba(43,208,189,0.25)" }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M8 1L14.5 5v6L8 15 1.5 11V5L8 1z" stroke="currentColor" strokeWidth="1.2" style={{ color: "var(--nt-text-lo)" }} />
-                            <circle cx="8" cy="8" r="2.5" fill="currentColor" style={{ color: "rgba(43,208,189,0.6)" }} />
-                          </svg>
-                        </div>
-                        <div
-                          className="text-[9px] uppercase tracking-[0.3em]"
-                          style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}
-                        >
-                          cortexflow · profile setup
-                        </div>
-                      </div>
-                      <h2
-                        className="text-xl sm:text-2xl mb-1"
-                        style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)", fontWeight: 700, letterSpacing: "-0.02em" }}
-                      >
-                        Select your role
-                      </h2>
-                      <p className="text-sm mb-6" style={{ color: "var(--nt-text-lo)", lineHeight: 1.6 }}>
-                        Your role determines your dashboard layout and feature access. This choice is permanent to maintain data integrity.
-                      </p>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {([
-                          {
-                            id: "patient" as UserRole,
-                            title: "Patient",
-                            detail: "Full cognitive analysis suite, memory lane, health tasks, and safety tools",
-                            icon: (
-                              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                                <circle cx="11" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
-                                <path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                              </svg>
-                            ),
-                            accent: "linear-gradient(135deg, #14b8a6, #3b82f6)",
-                          },
-                          {
-                            id: "caregiver" as UserRole,
-                            title: "Caregiver",
-                            detail: "Monitor one patient's metrics, receive SOS alerts, send reminders",
-                            icon: (
-                              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                                <path d="M11 4C7 4 4 7.5 4 10.5C4 16 11 20 11 20C11 20 18 16 18 10.5C18 7.5 15 4 11 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                                <circle cx="11" cy="10" r="2" stroke="currentColor" strokeWidth="1.5" />
-                              </svg>
-                            ),
-                            accent: "linear-gradient(135deg, #f59e0b, #ef4444)",
-                          },
-                          {
-                            id: "provider" as UserRole,
-                            title: "Healthcare Provider",
-                            detail: "Manage multiple patients, review trends, write orders, track cohorts",
-                            icon: (
-                              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                                <rect x="3" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                                <path d="M11 9v4M9 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                <path d="M7 5V3a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="1.5" />
-                              </svg>
-                            ),
-                            accent: "linear-gradient(135deg, #8b5cf6, #ec4899)",
-                          },
-                        ]).map((item, i) => (
-                          <button
-                            key={item.id}
-                            onClick={() => void handleRoleSelection(item.id)}
-                            disabled={roleSaving}
-                            className="group relative rounded-2xl text-left disabled:opacity-50 glass-card-hover animate-stagger-in overflow-hidden"
-                            style={{
-                              animationDelay: `${i * 80}ms`,
-                              border: "1px solid var(--nt-divider)",
-                              background: "var(--nt-glass)",
-                            }}
-                          >
-                            <div className="h-1 w-full" style={{ background: item.accent }} />
-                            <div className="px-4 py-4">
-                              <div
-                                className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-                                style={{ background: "var(--nt-hover)", border: "1px solid var(--nt-divider)", color: "var(--nt-text-lo)" }}
-                              >
-                                {item.icon}
-                              </div>
-                              <div className="text-sm font-semibold mb-1.5" style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)" }}>
-                                {item.title}
-                              </div>
-                              <div className="text-[11px] leading-relaxed" style={{ color: "var(--nt-text-xs)" }}>
-                                {item.detail}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                      {roleError && (
-                        <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(216,90,48,0.08)", border: "1px solid rgba(216,90,48,0.2)" }}>
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#D85A30" strokeWidth="1.2" /><path d="M7 4v3M7 9v.5" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                          <span className="text-xs" style={{ color: "#D85A30" }}>{roleError}</span>
-                        </div>
-                      )}
-                      {roleSaving && (
-                        <div className="mt-4 flex items-center gap-2">
-                          <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--nt-text-ghost)", borderTopColor: "transparent" }} />
-                          <span className="text-xs" style={{ color: "var(--nt-text-ghost)" }}>Configuring your workspace…</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+
               </div>
             )}
 
@@ -1949,6 +1832,153 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {isAuthenticated && isBootstrappingAccount && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[8px]" />
+          <div
+            className="relative z-10 flex flex-col items-center gap-4 rounded-2xl px-8 py-6"
+            style={{
+              background: "var(--nt-glass-hi)",
+              border: "1px solid var(--nt-glass-border)",
+              boxShadow: "0 24px 60px rgba(6,16,28,0.32)",
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: "rgba(20,184,166,0.4)", borderTopColor: "#14b8a6" }}
+            />
+            <div style={{ color: "var(--nt-text-hi)", fontSize: 14, fontFamily: "var(--font-syne)", fontWeight: 600 }}>
+              Verifying account
+            </div>
+            <div style={{ color: "var(--nt-text-ghost)", fontSize: 11 }}>
+              Loading your workspace...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAuthenticated && !isBootstrappingAccount && roleProfile.needsRoleSelection && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px]" />
+          <div
+            className="relative z-10 w-full max-w-[780px] rounded-3xl p-6 sm:p-8 animate-scale-in"
+            style={{
+              background: "var(--nt-glass-hi)",
+              border: "1px solid var(--nt-glass-border)",
+              boxShadow: "0 32px 80px rgba(6, 16, 28, 0.32), 0 0 0 1px rgba(255,255,255,0.05)",
+            }}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, rgba(43,208,189,0.2), rgba(59,130,246,0.2))", border: "1px solid rgba(43,208,189,0.25)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1L14.5 5v6L8 15 1.5 11V5L8 1z" stroke="currentColor" strokeWidth="1.2" style={{ color: "var(--nt-text-lo)" }} />
+                  <circle cx="8" cy="8" r="2.5" fill="currentColor" style={{ color: "rgba(43,208,189,0.6)" }} />
+                </svg>
+              </div>
+              <div
+                className="text-[9px] uppercase tracking-[0.3em]"
+                style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}
+              >
+                cortexflow · profile setup
+              </div>
+            </div>
+            <h2
+              className="text-xl sm:text-2xl mb-1"
+              style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)", fontWeight: 700, letterSpacing: "-0.02em" }}
+            >
+              Select your role
+            </h2>
+            <p className="text-sm mb-6" style={{ color: "var(--nt-text-lo)", lineHeight: 1.6 }}>
+              This is a one-time setup. Your role personalises your workspace and is saved to your account.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {([
+                {
+                  id: "patient" as UserRole,
+                  title: "Patient",
+                  detail: "Full cognitive analysis suite, memory lane, health tasks, and safety tools",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                      <circle cx="11" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M3 19c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  ),
+                  accent: "linear-gradient(135deg, #14b8a6, #3b82f6)",
+                },
+                {
+                  id: "caregiver" as UserRole,
+                  title: "Caregiver",
+                  detail: "Monitor one patient\u2019s metrics, receive SOS alerts, send reminders",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                      <path d="M11 4C7 4 4 7.5 4 10.5C4 16 11 20 11 20C11 20 18 16 18 10.5C18 7.5 15 4 11 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                      <circle cx="11" cy="10" r="2" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                  ),
+                  accent: "linear-gradient(135deg, #f59e0b, #ef4444)",
+                },
+                {
+                  id: "provider" as UserRole,
+                  title: "Healthcare Provider",
+                  detail: "Manage multiple patients, review trends, write orders, track cohorts",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                      <rect x="3" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M11 9v4M9 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M7 5V3a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                  ),
+                  accent: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+                },
+              ]).map((item, i) => (
+                <button
+                  key={item.id}
+                  onClick={() => void handleRoleSelection(item.id)}
+                  disabled={roleSaving}
+                  className="group relative rounded-2xl text-left disabled:opacity-50 glass-card-hover animate-stagger-in overflow-hidden"
+                  style={{
+                    animationDelay: `${i * 80}ms`,
+                    border: "1px solid var(--nt-divider)",
+                    background: "var(--nt-glass)",
+                  }}
+                >
+                  <div className="h-1 w-full" style={{ background: item.accent }} />
+                  <div className="px-4 py-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                      style={{ background: "var(--nt-hover)", border: "1px solid var(--nt-divider)", color: "var(--nt-text-lo)" }}
+                    >
+                      {item.icon}
+                    </div>
+                    <div className="text-sm font-semibold mb-1.5" style={{ color: "var(--nt-text-hi)", fontFamily: "var(--font-syne)" }}>
+                      {item.title}
+                    </div>
+                    <div className="text-[11px] leading-relaxed" style={{ color: "var(--nt-text-xs)" }}>
+                      {item.detail}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {roleError && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(216,90,48,0.08)", border: "1px solid rgba(216,90,48,0.2)" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#D85A30" strokeWidth="1.2" /><path d="M7 4v3M7 9v.5" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                <span className="text-xs" style={{ color: "#D85A30" }}>{roleError}</span>
+              </div>
+            )}
+            {roleSaving && (
+              <div className="mt-4 flex items-center gap-2">
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--nt-text-ghost)", borderTopColor: "transparent" }} />
+                <span className="text-xs" style={{ color: "var(--nt-text-ghost)" }}>Configuring your workspace…</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {splashCompleted && !isAuthenticated && (
         <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
