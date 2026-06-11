@@ -192,41 +192,43 @@ function HistoryCard({ entry, onSelect, onRemove }: { entry: HistoryEntry; onSel
   return (
     <div
       onClick={onSelect}
-      className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.01]"
+      className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.01] shrink-0"
       style={{ ...GLASS, boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
     >
       <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl" style={{ background: risk.color, opacity: 0.75 }} />
 
-      <div className="pl-4 pr-3 py-3 flex flex-col gap-2">
+      <div className="pl-5 pr-4 py-4 flex flex-col gap-3">
         <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             {entry.inputType === "transcript"
-              ? <IconMicrophone size={10} style={{ color: "var(--nt-icon)" }} className="shrink-0" />
-              : <IconTextSize    size={10} style={{ color: "var(--nt-icon)" }} className="shrink-0" />
+              ? <IconMicrophone size={12} style={{ color: "var(--nt-icon)" }} className="shrink-0" />
+              : <IconTextSize    size={12} style={{ color: "var(--nt-icon)" }} className="shrink-0" />
             }
-            <span className="text-[10px] truncate max-w-[42vw] sm:max-w-none" style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}>{relativeTime(entry.timestamp)}</span>
+            <span className="text-[11px] truncate max-w-[42vw] sm:max-w-none" style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}>{relativeTime(entry.timestamp)}</span>
           </div>
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ color: risk.color, background: risk.bg }}>{risk.label}</span>
-            <button onClick={onRemove} className="nt-nav-btn opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md flex items-center justify-center hover:text-red-500">
-              <IconTrash size={11} />
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ color: risk.color, background: risk.bg }}>{risk.label}</span>
+            <button onClick={onRemove} className="nt-nav-btn opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:text-red-500">
+              <IconTrash size={13} />
             </button>
-            <IconChevronRight size={12} style={{ color: "var(--nt-text-ghost)" }} />
+            <IconChevronRight size={14} style={{ color: "var(--nt-text-ghost)" }} />
           </div>
         </div>
 
-        <p className="text-[11px] leading-snug line-clamp-2" style={{ color: "var(--nt-text-lo)" }}>{entry.inputSnippet}</p>
+        <p className="text-[12px] leading-relaxed line-clamp-4" style={{ color: "var(--nt-text-lo)", minHeight: "3rem" }}>
+          {entry.inputSnippet || <span className="italic opacity-50">No transcription available.</span>}
+        </p>
 
-        <div className="flex items-end gap-1.5 pt-0.5">
+        <div className="flex items-end gap-2 pt-1">
           {DOMAINS.map((d) => {
             const pct = Math.round((entry.scores[d] ?? 0) * 100);
             const col = scoreColor(pct);
             return (
-              <div key={d} className="flex flex-col items-center gap-0.5 flex-1">
-                <div className="w-full h-5 rounded-sm overflow-hidden flex flex-col justify-end" style={{ background: "var(--nt-track)" }}>
-                  <div className="w-full rounded-t-sm" style={{ height: `${pct}%`, background: col, opacity: 0.85 }} />
+              <div key={d} className="flex flex-col items-center gap-1 flex-1">
+                <div className="w-full h-8 rounded-sm overflow-hidden flex flex-col justify-end" style={{ background: "var(--nt-track)" }}>
+                  <div className="w-full rounded-t-sm transition-all duration-500" style={{ height: `${pct}%`, background: col, opacity: 0.85 }} />
                 </div>
-                <span className="text-[8px] uppercase" style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}>{DOMAIN_LABELS[d]}</span>
+                <span className="text-[9px] uppercase" style={{ color: "var(--nt-text-ghost)", fontFamily: "var(--font-jetbrains-mono)" }}>{DOMAIN_LABELS[d]}</span>
               </div>
             );
           })}

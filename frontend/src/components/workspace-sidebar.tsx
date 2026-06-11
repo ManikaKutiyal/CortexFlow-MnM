@@ -77,7 +77,6 @@ export function WorkspaceSidebar({
         { title: "New Analysis", icon: Plus, url: "#" },
         { title: "Dashboard", icon: LayoutDashboard, url: "#" },
         { title: "History", icon: Clock, url: "#" },
-        { title: "Reports", icon: FileText, url: "#" },
       ];
   const navSecondary: NavItem[] = role === "patient"
     ? [
