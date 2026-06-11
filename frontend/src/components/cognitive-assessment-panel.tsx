@@ -171,7 +171,7 @@ export function CognitiveAssessmentPanel() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: transcript,
+          transcript: transcript,
           pause_map: pauseMap,
           audio_duration: duration || 10.0,
         }),
@@ -200,13 +200,15 @@ export function CognitiveAssessmentPanel() {
             
             if (data.type === "step") {
               setProgressLogs(prev => {
-                const existing = prev.findIndex(p => p.step === data.step);
+                const stepName = data.step?.name ?? data.step;
+                const stepStatus = data.step?.status ?? data.status;
+                const existing = prev.findIndex(p => p.step === stepName);
                 if (existing >= 0) {
                   const updated = [...prev];
-                  updated[existing] = { step: data.step, status: data.status };
+                  updated[existing] = { step: stepName, status: stepStatus };
                   return updated;
                 }
-                return [...prev, { step: data.step, status: data.status }];
+                return [...prev, { step: stepName, status: stepStatus }];
               });
             } else if (data.type === "end") {
               setSpeechReport(data.report);

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     const { data: patients, error: patientError } = await supabase
       .from("users")
-      .select("id, email, display_name, photo_url")
+      .select("id, email, display_name, photo_url, unique_patient_id")
       .in("id", patientIds);
 
     if (patientError) {
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       name: patient.display_name ?? patient.email ?? "Patient",
       email: patient.email ?? null,
       photo_url: patient.photo_url ?? null,
+      unique_patient_id: patient.unique_patient_id ?? null,
       open_tasks: taskCounts.get(patient.id) ?? 0,
       open_alerts: alertCounts.get(patient.id) ?? 0,
       total_reports: reportCounts.get(patient.id) ?? 0,

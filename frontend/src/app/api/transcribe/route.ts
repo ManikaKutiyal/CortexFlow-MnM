@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     groqForm.append("file", new Blob([audioBuffer], { type: mimeType }), "audio.webm");
     groqForm.append("model", GROQ_TRANSCRIBE_MODEL);
     groqForm.append("response_format", "verbose_json");
+    groqForm.append("timestamp_granularities[]", "word");
     groqForm.append("language", "en");
     const groqRes = await fetch(GROQ_TRANSCRIBE_URL, {
       method: "POST",

@@ -6,6 +6,7 @@ type ProviderPatient = {
   name: string;
   email: string | null;
   photo_url: string | null;
+  unique_patient_id: string | null;
   open_tasks: number;
   open_alerts: number;
   total_reports: number;
@@ -43,7 +44,11 @@ export function ProviderRosterPanel() {
   const filtered = useMemo(() => {
     if (!search.trim()) return patients;
     const needle = search.toLowerCase();
-    return patients.filter((p) => p.name.toLowerCase().includes(needle) || (p.email ?? "").toLowerCase().includes(needle));
+    return patients.filter((p) =>
+      p.name.toLowerCase().includes(needle) ||
+      (p.email ?? "").toLowerCase().includes(needle) ||
+      (p.unique_patient_id ?? "").toLowerCase().includes(needle)
+    );
   }, [patients, search]);
   const totalAlerts = useMemo(() => patients.reduce((sum, p) => sum + p.open_alerts, 0), [patients]);
   return (
@@ -94,7 +99,7 @@ export function ProviderRosterPanel() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search patients by name or email…"
+              placeholder="Search patients by name, email, or ID…"
               className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none"
               style={{ background: "var(--nt-hdr)", color: "var(--nt-text-hi)", border: "1px solid var(--nt-divider)" }}
             />
