@@ -1801,15 +1801,13 @@ export default function DashboardPage() {
                   >
                     <div className="flex-1 min-h-0 overflow-y-auto">
                       {cognitiveReport ? (
-                        <>
-                          <CognitionReportPanel report={cognitiveReport} />
-                          {wordTimestamps && wordTimestamps.length > 0 && (
-                            <div className="px-1 pb-2">
-                              <SpeechWavePanel wordTimestamps={wordTimestamps} duration={audioDuration} />
-                            </div>
-                          )}
-                        </>
+                        <CognitionReportPanel report={cognitiveReport} />
                       ) : null}
+                      {wordTimestamps && wordTimestamps.length > 0 && (
+                        <div className="px-1 pb-2">
+                          <SpeechWavePanel wordTimestamps={wordTimestamps} duration={audioDuration} />
+                        </div>
+                      )}
                     </div>
                   </div>
 

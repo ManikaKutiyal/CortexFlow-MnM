@@ -679,11 +679,8 @@ async def gemini_chat(model: str, system: str, user: str, temperature: float = 0
         "contents": [{"role": "user", "parts": [{"text": user}]}],
 
         "generationConfig": {
-
             "temperature": temperature,
-
-            "maxOutputTokens": 300,
-
+            "maxOutputTokens": 1000,
         },
 
     }
