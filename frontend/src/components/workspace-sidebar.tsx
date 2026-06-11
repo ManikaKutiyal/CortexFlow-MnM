@@ -77,7 +77,6 @@ export function WorkspaceSidebar({
         { title: "New Analysis", icon: Plus, url: "#" },
         { title: "Dashboard", icon: LayoutDashboard, url: "#" },
         { title: "History", icon: Clock, url: "#" },
-        { title: "Reports", icon: FileText, url: "#" },
       ];
   const navSecondary: NavItem[] = role === "patient"
     ? [
@@ -189,10 +188,21 @@ export function WorkspaceSidebar({
           </div>
           <button
             type="button"
-            onClick={() => {
-              void navigator.clipboard.writeText(uniquePatientId);
-              // Simple toast or visual feedback could go here, but native copy works well enough for now
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(uniquePatientId);
+                const btn = document.getElementById("copy-pid-btn");
+                if (btn) {
+                  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                  setTimeout(() => {
+                    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+                  }, 2000);
+                }
+              } catch (e) {
+                console.error("Failed to copy", e);
+              }
             }}
+            id="copy-pid-btn"
             className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-black/10 dark:hover:bg-white/10"
             title="Copy Patient ID"
             style={{ color: "#14b8a6" }}
