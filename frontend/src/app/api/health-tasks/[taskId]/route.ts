@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { AuthRequestError, requireAuthenticatedUser } from "@/libs/server-auth";
 import { getSupabaseServerClient } from "@/libs/supabase-server";
+import { broadcastPatientAlert } from "@/libs/notifications-service";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,15 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ taskI
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (status === "cancelled") {
+      void broadcastPatientAlert(
+        user.uid,
+        `Task Missed/Cancelled: ${data.title}`,
+        `The task "${data.title}" was marked as cancelled or missed.`,
+        "danger"
+      );
     }
 
     return NextResponse.json({ task: data }, { status: 200 });

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { AuthRequestError, requireAuthenticatedUser } from "@/libs/server-auth";
 import { getSupabaseServerClient } from "@/libs/supabase-server";
+import { createAndSendNotification } from "@/libs/notifications-service";
 
 export const runtime = "nodejs";
 
@@ -75,26 +76,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    const payload = {
-      recipient_id: patientId,
-      sender_id: user.uid,
-      patient_id: patientId,
+    const notification = await createAndSendNotification({
+      recipientId: patientId,
+      senderId: user.uid,
+      patientId: patientId,
       type: "caregiver_message",
       title,
-      body: body.body ?? null,
-    };
+      body: body.body ?? "No details provided.",
+      severity: "warning", // Caregiver alerts often warrant a bit more attention
+    });
 
-    const { data, error } = await supabase
-      .from("notifications")
-      .insert(payload)
-      .select("id, title, body, patient_id, created_at")
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ notification: data }, { status: 201 });
+    return NextResponse.json({ notification }, { status: 201 });
   } catch (error) {
     if (error instanceof AuthRequestError) {
       return NextResponse.json({ error: error.message }, { status: error.status });

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { AuthRequestError, requireAuthenticatedUser } from "@/libs/server-auth";
 import { getSupabaseServerClient } from "@/libs/supabase-server";
+import { broadcastPatientAlert } from "@/libs/notifications-service";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,16 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("Supabase insert error:", error);
       return NextResponse.json({ error: "Failed to save assessment to database" }, { status: 500 });
+    }
+
+    if (score < 50) {
+      const assessmentName = type === "memory_quiz" ? "Memory Quiz" : "Speech Analysis";
+      void broadcastPatientAlert(
+        user.uid,
+        `Critical Alert: Low Cognitive Score`,
+        `The recent cognitive assessment (${assessmentName}) resulted in a critical score of ${score}%. Immediate attention may be required.`,
+        "danger"
+      );
     }
 
     return NextResponse.json({ success: true, id: data.id });

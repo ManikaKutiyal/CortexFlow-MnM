@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Activity, Brain, Clock, FileText, Heart, HelpCircle, LayoutDashboard, Mic, Plus, Shield, Bell, Users, Stethoscope, ClipboardList, TrendingUp, UserPlus, Search } from "lucide-react";
+import { Activity, Brain, Clock, FileText, Heart, HelpCircle, LayoutDashboard, Mic, Plus, Shield, Bell, Users, Stethoscope, ClipboardList, TrendingUp, UserPlus, Search, MessageSquare } from "lucide-react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 type NavItem = { title: string; icon: React.ComponentType<{ size?: number; className?: string }>; url: string; badge?: number };
 type WorkspaceSidebarProps = {
@@ -59,6 +59,7 @@ export function WorkspaceSidebar({
       { title: "Care Network", icon: Users, url: "#" },
       { title: "Alerts", icon: Shield, url: "#" },
       { title: "Notifications", icon: Bell, url: "#", badge: notificationCount },
+      { title: "Communications", icon: MessageSquare, url: "#" },
       { title: "Care Tasks", icon: ClipboardList, url: "#" },
       { title: "Reports", icon: FileText, url: "#" },
     ]
@@ -69,6 +70,7 @@ export function WorkspaceSidebar({
         { title: "Patient Records", icon: FileText, url: "#" },
         { title: "Patient Trends", icon: TrendingUp, url: "#" },
         { title: "Orders", icon: ClipboardList, url: "#" },
+        { title: "Communications", icon: MessageSquare, url: "#" },
         { title: "Notifications", icon: Bell, url: "#" },
         { title: "Reports", icon: FileText, url: "#" },
         { title: "Speech Analysis", icon: Stethoscope, url: "#" },
@@ -77,6 +79,7 @@ export function WorkspaceSidebar({
         { title: "New Analysis", icon: Plus, url: "#" },
         { title: "Dashboard", icon: LayoutDashboard, url: "#" },
         { title: "History", icon: Clock, url: "#" },
+        { title: "Communications", icon: MessageSquare, url: "#" },
       ];
   const navSecondary: NavItem[] = role === "patient"
     ? [
