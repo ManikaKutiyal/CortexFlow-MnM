@@ -18,11 +18,11 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseServerClient();
     
-    const { data: userData } = await supabase.from("users").select("display_name, role").eq("id", user.id).single();
+    const { data: userData } = await supabase.from("users").select("display_name, role").eq("id", user.uid).single();
     let finalSenderName = userData?.display_name || "User";
 
     if (userData?.role === "provider") {
-      const { data: providerData } = await supabase.from("provider_profiles").select("org_name").eq("user_id", user.id).single();
+      const { data: providerData } = await supabase.from("provider_profiles").select("org_name").eq("user_id", user.uid).single();
       if (providerData?.org_name) {
         finalSenderName = providerData.org_name;
       }
