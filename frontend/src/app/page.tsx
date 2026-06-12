@@ -140,6 +140,10 @@ const CommunicationPanel = dynamic(
   () => import("@/components/communication-panel").then((mod) => mod.CommunicationPanel),
   { ssr: false },
 );
+const UserProfilePanel = dynamic<{ currentUserRole: string; currentUserId: string }>(
+  () => import("../components/user-profile-panel" /* force re-parse */).then((mod) => mod.UserProfilePanel),
+  { ssr: false },
+);
 
 
 
@@ -961,6 +965,7 @@ export default function DashboardPage() {
   const isProviderSpeech = activePage === "speech analysis";
   const isProviderPatientAdd = activePage === "manage roster";
   const isPatientAccessRequests = activePage === "access requests";
+  const isProfilePage = activePage === "profile";
   const isWorkspacePanel =
     isDashboardPage ||
     isHistoryPage ||
@@ -987,7 +992,8 @@ export default function DashboardPage() {
     isUserNotifications ||
     isProviderSpeech ||
     isProviderPatientAdd ||
-    isPatientAccessRequests;
+    isPatientAccessRequests ||
+    isProfilePage;
   const topbarTitle = isAboutPage ? "About MnM" : activePage === "analysis" ? "Cognitive Analysis" : activePage.replace(/\b\w/g, (char) => char.toUpperCase());
 
   const showPhase2 = activePage === "analysis" && hasStarted && !isLoading && !isWorkspacePanel;
@@ -1703,6 +1709,11 @@ export default function DashboardPage() {
             {isProviderPatientAdd && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderPatientAdd}>
                 <ProviderPatientAddPanel />
+              </div>
+            )}
+            {isProfilePage && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProfilePage}>
+                <UserProfilePanel currentUserRole={roleProfile.role!} currentUserId={profile?.uid!} />
               </div>
             )}
 

@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import type { HistoryEntry } from "@/hooks/useSessionHistory";
 import { ProfileRadarChart } from "@/components/profile-radar-chart";
+import { ProviderSearchPanel } from "@/components/provider-search-panel";
 import {
   IconBrain,
   IconActivity,
@@ -380,6 +381,11 @@ export function MissionControlView({ entries, onStartAnalysis }: MissionControlV
           New analysis
         </button>
       </div>
+
+      <div className="mb-4">
+        <ProviderSearchPanel />
+      </div>
+
       <div className="grid grid-cols-1 min-[560px]:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3 mb-3">
         <KpiCard
           label="Total Sessions"

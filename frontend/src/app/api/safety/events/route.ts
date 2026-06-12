@@ -59,10 +59,10 @@ export async function POST(req: NextRequest) {
       try {
         const { data: patientRow } = await supabase
           .from("users")
-          .select("full_name, unique_patient_id")
+          .select("full_name, display_name, unique_patient_id")
           .eq("id", user.uid)
           .maybeSingle();
-        const patientName = patientRow?.full_name ?? user.name ?? user.email ?? "Patient";
+        const patientName = patientRow?.display_name ?? patientRow?.full_name ?? user.name ?? user.email ?? "Patient";
         const patientId = patientRow?.unique_patient_id ?? user.uid;
         const emailOpts = {
           patientName,
