@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Activity, Brain, Clock, FileText, Heart, HelpCircle, LayoutDashboard, Mic, Plus, Shield, Bell, Users, Stethoscope, ClipboardList, TrendingUp, UserPlus, Search, MessageSquare } from "lucide-react";
+import { Activity, Brain, Clock, FileText, Heart, HelpCircle, LayoutDashboard, Mic, Plus, Shield, Bell, Users, Stethoscope, ClipboardList, TrendingUp, UserPlus, Search, MessageSquare, User } from "lucide-react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 type NavItem = { title: string; icon: React.ComponentType<{ size?: number; className?: string }>; url: string; badge?: number };
 type WorkspaceSidebarProps = {
@@ -241,7 +241,6 @@ export function WorkspaceSidebar({
         <button
           type="button"
           onClick={() => {
-            if (!onLogout) return;
             setShowAccountActions((prev) => !prev);
           }}
           className="nt-nav-btn w-full flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer text-left"
@@ -263,20 +262,33 @@ export function WorkspaceSidebar({
             )}
           </div>
         </button>
-        {showAccountActions && onLogout && (
-          <button
-            type="button"
-            onClick={onLogout}
-            className="mt-1 ml-8 px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5"
-            style={{
-              color: "#D85A30",
-              border: "1px solid rgba(216, 90, 48, 0.28)",
-              background: "rgba(216, 90, 48, 0.08)",
-            }}
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M6.5 3V2a1 1 0 00-1-1H2a1 1 0 00-1 1v6a1 1 0 001 1h3.5a1 1 0 001-1V7" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" /><path d="M4 5h5M8 3.5L9.5 5 8 6.5" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            Logout
-          </button>
+        {showAccountActions && (
+          <div className="mt-1 ml-8 flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => onNavItemClick?.({ title: "Profile", icon: User, url: "#" })}
+              className="px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+              style={{ color: "var(--nt-text-hi)" }}
+            >
+              <User size={10} />
+              My Profile
+            </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5"
+                style={{
+                  color: "#D85A30",
+                  border: "1px solid rgba(216, 90, 48, 0.28)",
+                  background: "rgba(216, 90, 48, 0.08)",
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M6.5 3V2a1 1 0 00-1-1H2a1 1 0 00-1 1v6a1 1 0 001 1h3.5a1 1 0 001-1V7" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" /><path d="M4 5h5M8 3.5L9.5 5 8 6.5" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                Logout
+              </button>
+            )}
+          </div>
         )}
       </div>
     </aside>

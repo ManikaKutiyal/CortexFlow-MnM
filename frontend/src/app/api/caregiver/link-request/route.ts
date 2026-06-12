@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseServerClient();
     const { data: patient, error: lookupError } = await supabase
       .from("users")
-      .select("id, email, full_name")
+      .select("id, email, full_name, display_name")
       .eq("unique_patient_id", patientCode)
       .maybeSingle();
     if (lookupError || !patient) {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
     if (patient.email) {
       void sendSosEmail({
-        patientName: patient.full_name ?? "Patient",
+        patientName: patient.display_name ?? patient.full_name ?? "Patient",
         patientId: patientCode,
         urgency: "info",
         location: null,
