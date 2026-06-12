@@ -72,7 +72,6 @@ export function WorkspaceSidebar({
         { title: "Orders", icon: ClipboardList, url: "#" },
         { title: "Communications", icon: MessageSquare, url: "#" },
         { title: "Notifications", icon: Bell, url: "#" },
-        { title: "Reports", icon: FileText, url: "#" },
         { title: "Speech Analysis", icon: Stethoscope, url: "#" },
       ]
       : [
