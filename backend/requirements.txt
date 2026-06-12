@@ -5,3 +5,8 @@ python-dotenv==1.0.1
 pydantic==2.10.3
 opencv-python==4.10.0.84
 deepface==0.0.93
+sentry-sdk[fastapi]==2.5.1
+opentelemetry-api==1.25.0
+opentelemetry-sdk==1.25.0
+opentelemetry-instrumentation-fastapi==0.46b0
+python-json-logger==2.0.7
