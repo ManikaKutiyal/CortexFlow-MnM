@@ -134,7 +134,11 @@ const PatientAccessRequestsPanel = dynamic(
 );
 const ProviderPatientAddPanel = dynamic(
   () => import("@/components/provider-patient-add-panel").then((mod) => mod.ProviderPatientAddPanel),
-  { ssr: false }
+  { ssr: false },
+);
+const CommunicationPanel = dynamic(
+  () => import("@/components/communication-panel").then((mod) => mod.CommunicationPanel),
+  { ssr: false },
 );
 
 
@@ -935,6 +939,7 @@ export default function DashboardPage() {
   const isReportsPage = activePage === "reports";
   const isBrainRegionsPage = activePage === "brain regions";
   const isBiomarkersPage = activePage === "biomarkers";
+  const isCommunications = activePage === "communications";
   const isAboutPage = activePage === "about";
   const isMemoryLanePage = activePage === "memory lane";
   const isCognitiveAssessmentsPage = activePage === "cognitive assessments";
@@ -1681,6 +1686,12 @@ export default function DashboardPage() {
             {isUserNotifications && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isUserNotifications}>
                 <UserNotificationsPanel />
+              </div>
+            )}
+
+            {isCommunications && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCommunications}>
+                <CommunicationPanel currentUserId={profile?.uid!} currentUserRole={roleProfile.role!} />
               </div>
             )}
 
