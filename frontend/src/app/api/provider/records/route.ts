@@ -35,7 +35,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ records: data ?? [] });
+    const { data: usersData } = await supabase
+      .from("users")
+      .select("id, display_name, email")
+      .in("id", patientIds);
+
+    const userMap = new Map((usersData ?? []).map((u) => [u.id, u.display_name || u.email || "Unknown Patient"]));
+
+    const enrichedRecords = (data ?? []).map((record) => ({
+      ...record,
+      patient_name: userMap.get(record.patient_id) || "Unknown Patient",
+    }));
+
+    return NextResponse.json({ records: enrichedRecords });
   } catch (error) {
     if (error instanceof AuthRequestError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
