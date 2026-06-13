@@ -33,7 +33,7 @@ export function usePresence(userId: string | undefined) {
       });
 
     return () => {
-      room.unsubscribe();
+      supabase.removeChannel(room);
     };
   }, [userId]);
 

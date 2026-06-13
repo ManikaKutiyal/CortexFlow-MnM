@@ -913,10 +913,11 @@ export default function DashboardPage() {
   const [backendAwake, setBackendAwake] = useState(true); //ch
   const [splashCompleted, setSplashCompleted] = useState(false);
   const [isBootstrappingAccount, setIsBootstrappingAccount] = useState(false);
-  const [roleProfile, setRoleProfile] = useState<RoleProfile>({
+  const [roleProfile, setRoleProfile] = useState<{ role: UserRole | null; needsRoleSelection: boolean; uniquePatientId: string | null; canonicalId: string | null }>({
     role: null,
     needsRoleSelection: false,
     uniquePatientId: null,
+    canonicalId: null,
   });
   const [roleSaving, setRoleSaving] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
@@ -1138,12 +1139,13 @@ export default function DashboardPage() {
           },
         });
         if (res.ok) {
-          const payload = await res.json().catch(() => ({} as { user?: { role?: UserRole | null; needs_role_selection?: boolean | null; unique_patient_id?: string | null } }));
+          const payload = await res.json().catch(() => ({} as { user?: { id?: string; role?: UserRole | null; needs_role_selection?: boolean | null; unique_patient_id?: string | null } }));
           const role = payload?.user?.role ?? null;
           const dbFlag = payload?.user?.needs_role_selection;
           const needsRoleSelection = role ? false : (dbFlag === true);
           const uniquePatientId = payload?.user?.unique_patient_id ?? null;
-          setRoleProfile({ role, needsRoleSelection, uniquePatientId });
+          const canonicalId = payload?.user?.id ?? null;
+          setRoleProfile({ role, needsRoleSelection, uniquePatientId, canonicalId });
           if (role && !needsRoleSelection) {
             setActivePage(role === "patient" ? "analysis" : "dashboard");
           }
@@ -1173,6 +1175,7 @@ export default function DashboardPage() {
         role: profile.role ?? null,
         needsRoleSelection: prev.needsRoleSelection,
         uniquePatientId: ("uniquePatientId" in profile) ? (profile as any).uniquePatientId : prev.uniquePatientId,
+        canonicalId: prev.canonicalId,
       }));
     }
   }, [profile]);
@@ -1384,7 +1387,7 @@ export default function DashboardPage() {
     setActivations(CORTEX_REGIONS);
     setWordTimestamps(undefined);
     setAudioDuration(undefined);
-    setRoleProfile({ role: null, needsRoleSelection: false, uniquePatientId: null });
+    setRoleProfile({ role: null, needsRoleSelection: false, uniquePatientId: null, canonicalId: null });
     setRoleError(null);
   }, [logOut]);
 
@@ -1406,7 +1409,7 @@ export default function DashboardPage() {
         return;
       }
       const payload = await res.json().catch(() => ({} as { user?: { unique_patient_id?: string | null } }));
-      setRoleProfile({ role: nextRole, needsRoleSelection: false, uniquePatientId: payload?.user?.unique_patient_id ?? null });
+      setRoleProfile(prev => ({ ...prev, role: nextRole, needsRoleSelection: false, uniquePatientId: payload?.user?.unique_patient_id ?? null }));
       setActivePage(nextRole === "patient" ? "analysis" : "dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save role.";
@@ -1695,11 +1698,17 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {isCommunications && (
-              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCommunications}>
-                <CommunicationPanel currentUserId={profile?.uid!} currentUserRole={roleProfile.role!} />
-              </div>
-            )}
+            <div className={`absolute inset-0 overflow-x-hidden ${!isCommunications ? "pointer-events-none" : ""}`}>
+              {roleProfile.role && (
+                <div className="pointer-events-auto h-full w-full">
+                  <CommunicationPanel 
+                    currentUserId={roleProfile.canonicalId || profile?.uid!} 
+                    currentUserRole={roleProfile.role} 
+                    isActive={isCommunications}
+                  />
+                </div>
+              )}
+            </div>
 
             {isProviderSpeech && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProviderSpeech}>
@@ -1713,7 +1722,7 @@ export default function DashboardPage() {
             )}
             {isProfilePage && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isProfilePage}>
-                <UserProfilePanel currentUserRole={roleProfile.role!} currentUserId={profile?.uid!} />
+                <UserProfilePanel currentUserRole={roleProfile.role!} currentUserId={roleProfile.canonicalId || profile?.uid!} />
               </div>
             )}
 
