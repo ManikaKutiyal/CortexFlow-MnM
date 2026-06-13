@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 type LinkedPatient = {
   id: string;
   patient_id: string;
@@ -44,6 +45,10 @@ export function ProviderPatientAddPanel() {
     if (!isReady) return;
     void loadPatients();
   }, [loadPatients, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadPatients();
+  });
   const addPatient = useCallback(async () => {
     const code = patientCode.trim().toUpperCase();
     if (!code) return;

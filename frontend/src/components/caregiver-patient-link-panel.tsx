@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 type LinkStatus = "pending" | "approved" | "rejected";
 type PatientLink = {
   id: string;
@@ -66,6 +67,10 @@ export function CaregiverPatientLinkPanel() {
     if (!isReady) return;
     void loadLinks();
   }, [loadLinks, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadLinks();
+  });
   const submitRequest = useCallback(async () => {
     const code = patientCode.trim().toUpperCase();
     if (!code) return;

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type NotificationItem = {
   id: string;
@@ -50,6 +51,10 @@ export function UserNotificationsPanel() {
     if (!isReady) return;
     void loadNotifications();
   }, [loadNotifications, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadNotifications();
+  });
 
   const unreadCount = useMemo(
     () => notifications.filter((item) => !item.read_at).length,

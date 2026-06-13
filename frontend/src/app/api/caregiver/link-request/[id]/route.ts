@@ -10,8 +10,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     const body = await req.json() as { status?: string };
     const status = String(body.status ?? "").trim();
-    if (status !== "approved" && status !== "rejected") {
-      return NextResponse.json({ error: "Status must be approved or rejected" }, { status: 400 });
+    if (status !== "active" && status !== "revoked") {
+      return NextResponse.json({ error: "Status must be active or revoked" }, { status: 400 });
     }
     const supabase = getSupabaseServerClient();
     const { data: link, error: fetchError } = await supabase

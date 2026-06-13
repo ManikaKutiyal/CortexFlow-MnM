@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type CareTask = {
   id: string;
@@ -69,6 +70,10 @@ export function CaregiverTasksPanel() {
     if (!isReady) return;
     void loadTasks();
   }, [loadTasks, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadTasks();
+  });
 
   const summary = useMemo(() => {
     if (!tasks.length) return "No tasks yet.";

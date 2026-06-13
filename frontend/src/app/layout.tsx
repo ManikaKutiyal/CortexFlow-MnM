@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { BackendWarmupPing } from "@/components/backend-warmup-ping";
+import { GlobalRefreshProvider } from "@/providers/refresh-provider";
 import "./globals.css";
 
 const syne = Syne({
@@ -46,8 +47,10 @@ export default function RootLayout({
         />
       </head>
       <body className="h-full">
-        <BackendWarmupPing />
-        {children}
+        <GlobalRefreshProvider>
+          <BackendWarmupPing />
+          {children}
+        </GlobalRefreshProvider>
       </body>
     </html>
   );

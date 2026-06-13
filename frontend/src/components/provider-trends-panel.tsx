@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type ProviderPatient = {
   id: string;
@@ -182,6 +183,13 @@ export function ProviderTrendsPanel() {
     if (!isReady || !selectedPatientId) return;
     void loadTrends(selectedPatientId);
   }, [selectedPatientId, loadTrends, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) {
+      if (selectedPatientId) void loadTrends(selectedPatientId);
+      else void loadTrends();
+    }
+  });
 
   const avgLoadLabel = useMemo(() => {
     return formatPercent(summary?.avg_cognitive_load);

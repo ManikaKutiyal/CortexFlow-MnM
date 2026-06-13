@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 type EmergencyEvent = {
   id: string;
   patient_id: string;
@@ -135,6 +136,10 @@ export function SafetyCenterPanel() {
     if (!isReady) return;
     void loadEvents();
   }, [loadEvents, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadEvents();
+  });
   const eventSummary = useMemo(() => {
     if (!events.length) return null;
     const openCount = events.filter((e) => e.status === "open").length;
