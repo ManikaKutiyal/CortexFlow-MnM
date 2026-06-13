@@ -10,7 +10,7 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from fastapi import FastAPI
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentation
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 # Medical PHI / PII Redaction Patterns
 PHI_PATTERNS = [
@@ -98,5 +98,5 @@ def setup_observability(app: FastAPI):
     provider.add_span_processor(processor)
     trace.set_tracer_provider(provider)
 
-    FastAPIInstrumentation.instrument_app(app)
+    FastAPIInstrumentor.instrument_app(app)
     logger.info("OpenTelemetry instrumented.")

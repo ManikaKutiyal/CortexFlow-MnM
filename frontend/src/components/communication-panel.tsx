@@ -40,10 +40,12 @@ type Contact = {
 
 export function CommunicationPanel({ 
   currentUserId, 
-  currentUserRole 
+  currentUserRole,
+  isActive = true,
 }: { 
   currentUserId: string; 
   currentUserRole: "patient" | "provider" | "caregiver"; 
+  isActive?: boolean;
 }) {
   const supabase = getSupabaseBrowserClient();
   const { authFetch } = useAuthFetch();
@@ -77,22 +79,44 @@ export function CommunicationPanel({
   useEffect(() => {
     const fetchContacts = async () => {
       let fetched: Contact[] = [];
+      
       if (currentUserRole === "patient") {
         const [{ data: cgl }, { data: pl }] = await Promise.all([
-          supabase.from("caregiver_patient_links").select("caregiver_id, users!caregiver_patient_links_caregiver_id_fkey(display_name, email)").eq("patient_id", currentUserId).eq("status", "active"),
-          supabase.from("provider_patient_links").select("provider_id, users!provider_patient_links_provider_id_fkey(display_name, email)").eq("patient_id", currentUserId).eq("status", "active")
+          supabase.from("caregiver_patient_links").select("caregiver_id").eq("patient_id", currentUserId).eq("status", "active"),
+          supabase.from("provider_patient_links").select("provider_id").eq("patient_id", currentUserId).eq("status", "active")
         ]);
         
-        fetched = [
-          ...(cgl || []).map((l: any) => ({ id: l.caregiver_id, name: (l.users as any)?.display_name || (l.users as any)?.email, role: "caregiver" as const, patient_id: currentUserId })),
-          ...(pl || []).map((l: any) => ({ id: l.provider_id, name: (l.users as any)?.display_name || (l.users as any)?.email, role: "provider" as const, patient_id: currentUserId }))
-        ];
+        const caregiverIds = (cgl || []).map((l: any) => l.caregiver_id);
+        const providerIds = (pl || []).map((l: any) => l.provider_id);
+        const userIdsToFetch = [...caregiverIds, ...providerIds];
+
+        if (userIdsToFetch.length > 0) {
+          const { data: users } = await supabase.from("users").select("id, display_name, email").in("id", userIdsToFetch);
+          const usersMap = new Map((users || []).map((u: any) => [u.id, u]));
+
+          fetched = [
+            ...caregiverIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "caregiver" as const, patient_id: currentUserId })),
+            ...providerIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "provider" as const, patient_id: currentUserId }))
+          ];
+        }
       } else if (currentUserRole === "caregiver") {
-        const { data: cgl } = await supabase.from("caregiver_patient_links").select("patient_id, users!caregiver_patient_links_patient_id_fkey(display_name, email)").eq("caregiver_id", currentUserId).eq("status", "active");
-        fetched = (cgl || []).map((l: any) => ({ id: l.patient_id, name: (l.users as any)?.display_name || (l.users as any)?.email, role: "patient" as const, patient_id: l.patient_id }));
+        const { data: cgl } = await supabase.from("caregiver_patient_links").select("patient_id").eq("caregiver_id", currentUserId).eq("status", "active");
+        const patientIds = (cgl || []).map((l: any) => l.patient_id);
+        
+        if (patientIds.length > 0) {
+          const { data: users } = await supabase.from("users").select("id, display_name, email").in("id", patientIds);
+          const usersMap = new Map((users || []).map((u: any) => [u.id, u]));
+          fetched = patientIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "patient" as const, patient_id: id }));
+        }
       } else {
-        const { data: pl } = await supabase.from("provider_patient_links").select("patient_id, users!provider_patient_links_patient_id_fkey(display_name, email)").eq("provider_id", currentUserId).eq("status", "active");
-        fetched = (pl || []).map((l: any) => ({ id: l.patient_id, name: (l.users as any)?.display_name || (l.users as any)?.email, role: "patient" as const, patient_id: l.patient_id }));
+        const { data: pl } = await supabase.from("provider_patient_links").select("patient_id").eq("provider_id", currentUserId).eq("status", "active");
+        const patientIds = (pl || []).map((l: any) => l.patient_id);
+        
+        if (patientIds.length > 0) {
+          const { data: users } = await supabase.from("users").select("id, display_name, email").in("id", patientIds);
+          const usersMap = new Map((users || []).map((u: any) => [u.id, u]));
+          fetched = patientIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "patient" as const, patient_id: id }));
+        }
       }
       setContacts(fetched);
     };
@@ -284,10 +308,12 @@ export function CommunicationPanel({
   };
 
   return (
-    <div className="flex h-[600px] bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden relative">
+    <div className={`flex h-[600px] bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden relative ${!isActive && callState === "idle" ? "hidden" : ""}`}>
       {renderCallOverlay()}
       
-      {/* Sidebar */}
+      {/* Main UI wrapper (hidden if inactive, but call overlay remains if active) */}
+      <div className={`flex w-full h-full ${!isActive ? "hidden" : ""}`}>
+        {/* Sidebar */}
       <div className="w-1/3 bg-slate-50 border-r border-slate-200 flex flex-col">
         <div className="p-4 border-b border-slate-200 bg-white">
           <h2 className="font-semibold text-slate-800">Messages</h2>
@@ -491,6 +517,7 @@ export function CommunicationPanel({
             <p className="text-sm">Select a connection from the sidebar to start communicating.</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
