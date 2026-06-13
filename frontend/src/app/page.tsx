@@ -943,7 +943,7 @@ export default function DashboardPage() {
     return { "Lexical agent": "Lexical", "Semantic agent": "Semantic", "Prosody agent": "Prosody", "Syntax agent": "Syntax" }[running.name];
   }, [agentSteps]);
 
-  const isDashboardPage = activePage === "dashboard";
+  const isDashboardPage = activePage === "dashboard" && roleProfile.role === "patient";
   const isHistoryPage = activePage === "history";
   const isReportsPage = activePage === "reports";
   const isBrainRegionsPage = activePage === "brain regions";

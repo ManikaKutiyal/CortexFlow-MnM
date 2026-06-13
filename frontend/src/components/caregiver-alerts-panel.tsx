@@ -22,7 +22,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function CaregiverAlertsPanel() {
-  const { authFetch, idToken } = useAuthFetch();
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [events, setEvents] = useState<EmergencyEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +49,9 @@ export function CaregiverAlertsPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadAlerts();
-  }, [loadAlerts, idToken]);
+  }, [loadAlerts, idToken, isReady]);
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden" style={{ padding: "18px" }}>

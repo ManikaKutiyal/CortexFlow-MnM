@@ -67,7 +67,7 @@ function trendColor(trend: CaregiverInsights["summary"]["trend"]) {
 }
 
 export function CaregiverInsightsPanel() {
-  const { authFetch, idToken } = useAuthFetch();
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [insights, setInsights] = useState<CaregiverInsights | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,8 +94,9 @@ export function CaregiverInsightsPanel() {
   }, []);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadInsights();
-  }, [loadInsights, idToken]);
+  }, [loadInsights, idToken, isReady]);
 
   const patientLabel = useMemo(() => {
     if (!insights?.patient) return "No patient linked.";
