@@ -174,7 +174,7 @@ export function UserProfilePanel({ currentUserRole, currentUserId }: UserProfile
           <div className="flex flex-col items-center gap-4">
             <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-dashed" style={{ borderColor: "var(--nt-divider)" }}>
               {profilePicUrl ? (
-                <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" />
+                <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" onError={() => setProfilePicUrl("")} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-black/10">
                   <User size={48} style={{ color: "var(--nt-text-ghost)" }} />
