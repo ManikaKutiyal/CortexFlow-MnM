@@ -87,6 +87,7 @@ export function WorkspaceSidebar({
       { title: "Notifications", icon: Bell, url: "#", badge: notificationCount },
       { title: "Safety Center", icon: Shield, url: "#" },
       { title: "Health Tasks", icon: ClipboardList, url: "#" },
+      { title: "My Records", icon: FileText, url: "#" },
       { title: "Access Requests", icon: Users, url: "#" },
       { title: "About", icon: HelpCircle, url: "#" },
     ]

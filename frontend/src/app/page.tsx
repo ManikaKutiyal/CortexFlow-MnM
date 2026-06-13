@@ -132,6 +132,10 @@ const PatientAccessRequestsPanel = dynamic(
   () => import("@/components/patient-access-requests-panel").then((mod) => mod.PatientAccessRequestsPanel),
   { ssr: false }
 );
+const PatientRecordsPanel = dynamic(
+  () => import("@/components/patient-records-panel").then((mod) => mod.PatientRecordsPanel),
+  { ssr: false }
+);
 const ProviderPatientAddPanel = dynamic(
   () => import("@/components/provider-patient-add-panel").then((mod) => mod.ProviderPatientAddPanel),
   { ssr: false },
@@ -950,6 +954,7 @@ export default function DashboardPage() {
   const isCognitiveAssessmentsPage = activePage === "cognitive assessments";
   const isSafetyPage = activePage === "safety center";
   const isHealthTasksPage = activePage === "health tasks";
+  const isPatientRecords = activePage === "my records";
   const isCaregiverDashboard = activePage === "dashboard" && roleProfile.role === "caregiver";
   const isCaregiverOverview = activePage === "patient overview";
   const isCaregiverAlerts = activePage === "alerts";
@@ -978,6 +983,7 @@ export default function DashboardPage() {
     isCognitiveAssessmentsPage ||
     isSafetyPage ||
     isHealthTasksPage ||
+    isPatientRecords ||
     isCaregiverDashboard ||
     isCaregiverOverview ||
     isCaregiverAlerts ||
@@ -1147,7 +1153,7 @@ export default function DashboardPage() {
           const canonicalId = payload?.user?.id ?? null;
           setRoleProfile({ role, needsRoleSelection, uniquePatientId, canonicalId });
           if (role && !needsRoleSelection) {
-            setActivePage(role === "patient" ? "analysis" : "dashboard");
+            setActivePage(role === "patient" ? "analysis" : role === "provider" ? "roster" : "dashboard");
           }
         }
       } catch {
@@ -1410,7 +1416,7 @@ export default function DashboardPage() {
       }
       const payload = await res.json().catch(() => ({} as { user?: { unique_patient_id?: string | null } }));
       setRoleProfile(prev => ({ ...prev, role: nextRole, needsRoleSelection: false, uniquePatientId: payload?.user?.unique_patient_id ?? null }));
-      setActivePage(nextRole === "patient" ? "analysis" : "dashboard");
+      setActivePage(nextRole === "patient" ? "analysis" : nextRole === "provider" ? "roster" : "dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save role.";
       setRoleError(message);
@@ -1615,6 +1621,12 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {isPatientRecords && (
+              <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isPatientRecords}>
+                <PatientRecordsPanel />
+              </div>
+            )}
+
             {/* ══════ CAREGIVER VIEWS ══════ */}
             {isCaregiverDashboard && (
               <div className="absolute inset-0 overflow-x-hidden" aria-hidden={!isCaregiverDashboard}>
@@ -1700,7 +1712,7 @@ export default function DashboardPage() {
 
             <div className={`absolute inset-0 overflow-x-hidden ${!isCommunications ? "pointer-events-none" : ""}`}>
               {roleProfile.role && (
-                <div className="pointer-events-auto h-full w-full">
+                <div className={`h-full w-full ${isCommunications ? "pointer-events-auto" : "pointer-events-none"}`}>
                   <CommunicationPanel 
                     currentUserId={roleProfile.canonicalId || profile?.uid!} 
                     currentUserRole={roleProfile.role} 
