@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type ProviderPatient = {
   id: string;
@@ -62,6 +63,10 @@ export function ProviderNotificationsPanel() {
     if (!isReady) return;
     void loadData();
   }, [loadData, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadData();
+  });
 
   const canSend = title.trim().length > 1 && patientId;
 

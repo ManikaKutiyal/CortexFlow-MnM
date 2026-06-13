@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type MemoryEntry = {
   id: string;
@@ -166,6 +167,10 @@ export function MemoryLanePanel() {
     if (!isReady) return;
     void loadData();
   }, [loadData, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadData();
+  });
 
   const canSubmitMemory = memoryForm.title.trim().length > 1;
   const canSubmitVoiceNote = voiceNoteForm.filePath.trim().length > 0 || voiceNoteForm.transcript.trim().length > 0;

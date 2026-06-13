@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 import { File, FileText, Image as ImageIcon, Activity, Pill, Download, Calendar } from "lucide-react";
 
 type PatientRecord = {
@@ -57,6 +58,10 @@ export function PatientRecordsPanel() {
     if (!isReady) return;
     void loadRecords();
   }, [loadRecords, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadRecords();
+  });
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden" style={{ padding: "18px" }}>

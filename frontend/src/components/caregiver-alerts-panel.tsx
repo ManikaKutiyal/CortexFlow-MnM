@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type EmergencyEvent = {
   id: string;
@@ -52,6 +53,10 @@ export function CaregiverAlertsPanel() {
     if (!isReady) return;
     void loadAlerts();
   }, [loadAlerts, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadAlerts();
+  });
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden" style={{ padding: "18px" }}>

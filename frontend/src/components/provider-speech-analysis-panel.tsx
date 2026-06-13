@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type ProviderPatient = {
   id: string;
@@ -137,6 +138,13 @@ export function ProviderSpeechAnalysisPanel() {
     if (!isReady || !selectedPatientId) return;
     void loadSpeechAnalysis(selectedPatientId);
   }, [selectedPatientId, loadSpeechAnalysis, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) {
+      if (selectedPatientId) void loadSpeechAnalysis(selectedPatientId);
+      else void loadSpeechAnalysis();
+    }
+  });
 
   const selectedSession = useMemo(() => {
     return sessions.find((session) => session.id === selectedSessionId) ?? sessions[0] ?? null;

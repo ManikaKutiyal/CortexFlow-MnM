@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 import { getSupabaseBrowserClient } from "@/libs/supabase-browser";
 import { Plus, X, UploadCloud, File, FileText, Image as ImageIcon, Activity, Pill } from "lucide-react";
 
@@ -90,8 +91,12 @@ export function ProviderRecordsPanel() {
 
   useEffect(() => {
     if (!isReady) return;
-    void loadData();
-  }, [loadData, idToken, isReady]);
+    void loadRecords();
+  }, [loadRecords, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadRecords();
+  });
 
   const filteredRecords = useMemo(() => {
     if (selectedPatientFilter === "all") return records;

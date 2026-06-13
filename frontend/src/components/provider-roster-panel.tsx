@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 type ProviderPatient = {
   id: string;
   name: string;
@@ -41,6 +42,10 @@ export function ProviderRosterPanel() {
     if (!isReady) return;
     void loadRoster();
   }, [loadRoster, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadRoster();
+  });
   const filtered = useMemo(() => {
     if (!search.trim()) return patients;
     const needle = search.toLowerCase();

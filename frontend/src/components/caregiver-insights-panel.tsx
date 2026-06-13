@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type InsightReport = {
   id: string;
@@ -97,6 +98,10 @@ export function CaregiverInsightsPanel() {
     if (!isReady) return;
     void loadInsights();
   }, [loadInsights, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadInsights();
+  });
 
   const patientLabel = useMemo(() => {
     if (!insights?.patient) return "No patient linked.";

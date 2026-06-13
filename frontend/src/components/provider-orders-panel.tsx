@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type ProviderPatient = {
   id: string;
@@ -79,6 +80,10 @@ export function ProviderOrdersPanel() {
     if (!isReady) return;
     void loadOrders();
   }, [loadOrders, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadOrders();
+  });
 
   const summary = useMemo(() => {
     if (!tasks.length) return "No orders yet.";

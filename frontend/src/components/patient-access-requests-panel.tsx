@@ -1,10 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 type AccessRequest = {
   id: string;
   caregiver_id: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "active" | "revoked";
   created_at: string;
   users?: {
     full_name: string | null;
@@ -41,7 +42,11 @@ export function PatientAccessRequestsPanel() {
     if (!isReady) return;
     void loadRequests();
   }, [loadRequests, idToken, isReady]);
-  const respond = useCallback(async (id: string, status: "approved" | "rejected") => {
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadRequests();
+  });
+  const respond = useCallback(async (id: string, status: "active" | "revoked") => {
     setActionId(id);
     try {
       const res = await authFetch(`/api/caregiver/link-request/${id}`, {
@@ -150,7 +155,7 @@ export function PatientAccessRequestsPanel() {
                     <div className="flex gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => void respond(req.id, "approved")}
+                        onClick={() => void respond(req.id, "active")}
                         disabled={actionId === req.id}
                         className="rounded-lg px-3.5 py-2 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
                         style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75", border: "1px solid rgba(29,158,117,0.25)" }}
@@ -160,7 +165,7 @@ export function PatientAccessRequestsPanel() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void respond(req.id, "rejected")}
+                        onClick={() => void respond(req.id, "revoked")}
                         disabled={actionId === req.id}
                         className="rounded-lg px-3.5 py-2 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
                         style={{ background: "rgba(216,90,48,0.08)", color: "#D85A30", border: "1px solid rgba(216,90,48,0.2)" }}
@@ -186,7 +191,8 @@ export function PatientAccessRequestsPanel() {
           </div>
           <div className="grid gap-2">
             {past.map((req, i) => {
-              const isApproved = req.status === "approved";
+              const isApproved = req.status === "active";
+              const isRejected = req.status === "revoked";
               return (
                 <div
                   key={req.id}

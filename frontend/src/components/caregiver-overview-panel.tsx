@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 type CaregiverOverview = {
   patient: {
     id: string;
@@ -73,6 +74,13 @@ export function CaregiverOverviewPanel() {
     void loadOverview();
     void loadNotifications();
   }, [loadOverview, loadNotifications, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) {
+      void loadOverview();
+      void loadNotifications();
+    }
+  });
   const patientLabel = useMemo(() => {
     if (!overview?.patient) return "No patient linked.";
     return `${overview.patient.name}${overview.patient.email ? ` · ${overview.patient.email}` : ""}`;

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
+import { useGlobalRefresh } from "@/providers/refresh-provider";
 
 type CareNetworkMember = {
   id: string;
@@ -59,11 +60,16 @@ export function CaregiverNetworkPanel() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
+    if (!isReady) return;
     void loadNetwork();
-  }, [loadNetwork, idToken]);
+  }, [loadNetwork, idToken, isReady]);
+
+  useGlobalRefresh(() => {
+    if (isReady) void loadNetwork();
+  });
 
   const patientLabel = useMemo(() => {
     if (!network?.patient) return "No patient linked.";
