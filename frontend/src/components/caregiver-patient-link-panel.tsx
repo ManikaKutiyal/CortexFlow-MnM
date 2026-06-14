@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useGlobalRefresh } from "@/providers/refresh-provider";
-type LinkStatus = "pending" | "approved" | "rejected";
+type LinkStatus = "pending" | "approved" | "rejected" | "active" | "revoked";
 type PatientLink = {
   id: string;
   patient_id: string;
@@ -10,6 +10,7 @@ type PatientLink = {
   created_at: string;
   users?: {
     full_name: string | null;
+    display_name?: string | null;
     email: string | null;
     unique_patient_id: string | null;
   };
@@ -33,7 +34,20 @@ const STATUS_CONFIG: Record<LinkStatus, { color: string; bg: string; border: str
     border: "rgba(29,158,117,0.2)",
     icon: <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#1D9E75" strokeWidth="1.2" /><path d="M3 5l1.5 1.5L7 4" stroke="#1D9E75" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" /></svg>,
   },
+  active: {
+    color: "#1D9E75",
+    bg: "rgba(29,158,117,0.08)",
+    border: "rgba(29,158,117,0.2)",
+    icon: <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#1D9E75" strokeWidth="1.2" /><path d="M3 5l1.5 1.5L7 4" stroke="#1D9E75" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+  },
+
   rejected: {
+    color: "#D85A30",
+    bg: "rgba(216,90,48,0.08)",
+    border: "rgba(216,90,48,0.2)",
+    icon: <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#D85A30" strokeWidth="1.2" /><path d="M3.5 3.5l3 3M6.5 3.5l-3 3" stroke="#D85A30" strokeWidth="1" strokeLinecap="round" /></svg>,
+  },
+  revoked: {
     color: "#D85A30",
     bg: "rgba(216,90,48,0.08)",
     border: "rgba(216,90,48,0.2)",
@@ -96,7 +110,7 @@ export function CaregiverPatientLinkPanel() {
       setSubmitting(false);
     }
   }, [patientCode, loadLinks]);
-  const approvedLink = links.find((l) => l.status === "approved");
+  const approvedLink = links.find((l) => l.status === "approved" || l.status === "active");
   return (
     <div className="h-full overflow-y-auto" style={{ padding: 18 }}>
       <div className="flex items-center justify-between mb-5">
@@ -185,10 +199,10 @@ export function CaregiverPatientLinkPanel() {
             </div>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(29,158,117,0.1)", border: "1px solid rgba(29,158,117,0.2)" }}>
-                <span style={{ color: "#1D9E75", fontWeight: 700, fontSize: 14 }}>{(approvedLink.users?.full_name ?? "P")[0].toUpperCase()}</span>
+                <span style={{ color: "#1D9E75", fontWeight: 700, fontSize: 14 }}>{(approvedLink.users?.full_name ?? approvedLink.users?.display_name ?? "P")[0].toUpperCase()}</span>
               </div>
               <div className="min-w-0 flex-1">
-                <div style={{ color: "var(--nt-text-hi)", fontSize: 15, fontWeight: 600 }}>{approvedLink.users?.full_name ?? "Patient"}</div>
+                <div style={{ color: "var(--nt-text-hi)", fontSize: 15, fontWeight: 600 }}>{approvedLink.users?.full_name ?? approvedLink.users?.display_name ?? "Patient"}</div>
                 <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--nt-text-ghost)" }}>
                   <span className="font-mono tracking-wide">{approvedLink.users?.unique_patient_id}</span>
                   {approvedLink.users?.email && <><span>·</span><span>{approvedLink.users.email}</span></>}
@@ -222,7 +236,12 @@ export function CaregiverPatientLinkPanel() {
         ) : (
           <div className="grid gap-2">
             {links.map((link, i) => {
-              const sc = STATUS_CONFIG[link.status];
+              const sc = STATUS_CONFIG[link.status] || {
+                color: "var(--nt-text-md)",
+                bg: "var(--nt-hover)",
+                border: "var(--nt-divider)",
+                icon: null,
+              };
               return (
                 <div
                   key={link.id}
@@ -231,10 +250,10 @@ export function CaregiverPatientLinkPanel() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: sc.bg, border: `1px solid ${sc.border}` }}>
-                      <span style={{ color: sc.color, fontWeight: 700, fontSize: 11 }}>{(link.users?.full_name ?? "P")[0].toUpperCase()}</span>
+                      <span style={{ color: sc.color, fontWeight: 700, fontSize: 11 }}>{(link.users?.full_name ?? link.users?.display_name ?? "P")[0].toUpperCase()}</span>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold truncate" style={{ color: "var(--nt-text-hi)" }}>{link.users?.full_name ?? link.patient_id}</div>
+                      <div className="text-sm font-semibold truncate" style={{ color: "var(--nt-text-hi)" }}>{link.users?.full_name ?? link.users?.display_name ?? link.patient_id}</div>
                       <div className="text-[10px] font-mono" style={{ color: "var(--nt-text-ghost)" }}>{new Date(link.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>

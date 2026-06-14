@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseServerClient();
     const { data, error } = await supabase
       .from("caregiver_patient_links")
-      .select("id, patient_id, status, created_at, users!caregiver_patient_links_patient_id_fkey(full_name, email, unique_patient_id)")
+      .select("id, patient_id, status, created_at, users!caregiver_patient_links_patient_id_fkey(full_name, display_name, email, unique_patient_id)")
       .eq("caregiver_id", user.uid)
       .order("created_at", { ascending: false });
     if (error) {
