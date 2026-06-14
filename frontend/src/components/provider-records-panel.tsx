@@ -91,11 +91,11 @@ export function ProviderRecordsPanel() {
 
   useEffect(() => {
     if (!isReady) return;
-    void loadRecords();
-  }, [loadRecords, idToken, isReady]);
+    void loadData();
+  }, [loadData, idToken, isReady]);
 
   useGlobalRefresh(() => {
-    if (isReady) void loadRecords();
+    if (isReady) void loadData();
   });
 
   const filteredRecords = useMemo(() => {

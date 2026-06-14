@@ -33,7 +33,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export function CaregiverNetworkPanel() {
-  const { authFetch, idToken } = useAuthFetch();
+  const { authFetch, idToken, isReady } = useAuthFetch();
   const [network, setNetwork] = useState<CareNetworkResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
