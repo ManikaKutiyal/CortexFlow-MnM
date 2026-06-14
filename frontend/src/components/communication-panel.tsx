@@ -17,7 +17,8 @@ import {
   File,
   X,
   StopCircle,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft
 } from "lucide-react";
 
 type Message = {
@@ -314,7 +315,7 @@ export function CommunicationPanel({
       {/* Main UI wrapper (hidden if inactive, but call overlay remains if active) */}
       <div className={`flex w-full h-full ${!isActive ? "hidden" : ""}`}>
         {/* Sidebar */}
-      <div className="w-1/3 bg-slate-50 border-r border-slate-200 flex flex-col">
+      <div className={`w-full md:w-1/3 bg-slate-50 border-r border-slate-200 flex-col ${selectedContact ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-slate-200 bg-white">
           <h2 className="font-semibold text-slate-800">Messages</h2>
         </div>
@@ -349,13 +350,19 @@ export function CommunicationPanel({
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className={`flex-1 flex-col bg-white ${!selectedContact ? 'hidden md:flex' : 'flex'}`}>
         {selectedContact ? (
           <>
             {/* Header */}
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold uppercase">
+                <button 
+                  onClick={() => setSelectedContact(null)}
+                  className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold uppercase shrink-0">
                   {selectedContact.name.substring(0, 2)}
                 </div>
                 <div>
