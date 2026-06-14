@@ -198,11 +198,12 @@ export function ProviderRecordsPanel() {
 
       {/* Filter Section */}
       <div className="mb-4 flex items-center gap-2">
-        <label className="text-xs font-medium text-slate-500">Filter by Patient:</label>
+        <label className="text-xs font-medium" style={{ color: "var(--nt-text-md)" }}>Filter by Patient:</label>
         <select 
           value={selectedPatientFilter}
           onChange={(e) => setSelectedPatientFilter(e.target.value)}
-          className="text-sm rounded-lg px-3 py-1.5 bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20"
+          style={{ background: "var(--nt-hdr)", color: "var(--nt-text-hi)", border: "1px solid var(--nt-divider)" }}
         >
           <option value="all">All Patients</option>
           {patients.map(p => (
@@ -304,7 +305,7 @@ export function ProviderRecordsPanel() {
                 <select 
                   value={uploadPatientId}
                   onChange={(e) => setUploadPatientId(e.target.value)}
-                  className="w-full text-sm rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full text-sm rounded-xl px-3 py-2 bg-slate-50 text-slate-900 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20"
                   disabled={isUploading}
                   required
                 >
@@ -343,7 +344,7 @@ export function ProviderRecordsPanel() {
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                   placeholder="e.g. Blood Test Results"
-                  className="w-full text-sm rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
+                  className="w-full text-sm rounded-xl px-3 py-2 bg-slate-50 text-slate-900 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
                   disabled={isUploading}
                   required
                 />
@@ -356,7 +357,7 @@ export function ProviderRecordsPanel() {
                   onChange={(e) => setUploadDescription(e.target.value)}
                   placeholder="Optional details about this record..."
                   rows={2}
-                  className="w-full text-sm rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white resize-none"
+                  className="w-full text-sm rounded-xl px-3 py-2 bg-slate-50 text-slate-900 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white resize-none"
                   disabled={isUploading}
                 />
               </div>

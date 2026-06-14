@@ -9,10 +9,27 @@ export async function GET(req: NextRequest) {
     const user = await requireAuthenticatedUser(req);
     const supabase = getSupabaseServerClient();
 
+    let targetUserId = user.uid;
+
+    const { data: profile } = await supabase.from("users").select("role").eq("id", user.uid).single();
+
+    if (profile?.role === "caregiver") {
+      const { data: link } = await supabase
+        .from("caregiver_patient_links")
+        .select("patient_id")
+        .eq("caregiver_id", user.uid)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (link?.patient_id) {
+        targetUserId = link.patient_id;
+      }
+    }
+
     const { data, error } = await supabase
       .from("reports")
       .select("id, created_at, input_type, input_snippet, scores, report, session_id, word_timestamps, audio_duration")
-      .eq("user_id", user.uid)
+      .eq("user_id", targetUserId)
       .order("created_at", { ascending: false })
       .limit(100);
 
