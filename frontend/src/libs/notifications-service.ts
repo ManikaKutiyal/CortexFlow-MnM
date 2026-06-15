@@ -72,7 +72,8 @@ export const broadcastPatientAlert = async (
   patientId: string,
   title: string,
   body: string,
-  severity: EmailSeverity = "danger"
+  severity: EmailSeverity = "danger",
+  excludeId?: string
 ) => {
   const supabase = getSupabaseServerClient();
   const recipients: string[] = [];
@@ -101,7 +102,7 @@ export const broadcastPatientAlert = async (
 
   recipients.push(patientId);
 
-  const uniqueRecipients = Array.from(new Set(recipients));
+  const uniqueRecipients = Array.from(new Set(recipients)).filter(id => id !== excludeId);
 
   const promises = uniqueRecipients.map((recipientId) => 
     createAndSendNotification({

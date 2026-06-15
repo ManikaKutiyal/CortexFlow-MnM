@@ -67,7 +67,6 @@ export function CommunicationPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
-  const [hasSentEmergencyEmail, setHasSentEmergencyEmail] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -92,12 +91,12 @@ export function CommunicationPanel({
         const userIdsToFetch = [...caregiverIds, ...providerIds];
 
         if (userIdsToFetch.length > 0) {
-          const { data: users } = await supabase.from("users").select("id, display_name, email").in("id", userIdsToFetch);
+          const { data: users } = await supabase.from("users").select("id, display_name, full_name, email").in("id", userIdsToFetch);
           const usersMap = new Map((users || []).map((u: any) => [u.id, u]));
 
           fetched = [
-            ...caregiverIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "caregiver" as const, patient_id: currentUserId })),
-            ...providerIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "provider" as const, patient_id: currentUserId }))
+            ...caregiverIds.map(id => ({ id, name: usersMap.get(id)?.full_name || usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "caregiver" as const, patient_id: currentUserId })),
+            ...providerIds.map(id => ({ id, name: usersMap.get(id)?.full_name || usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "provider" as const, patient_id: currentUserId }))
           ];
         }
       } else if (currentUserRole === "caregiver") {
@@ -105,18 +104,18 @@ export function CommunicationPanel({
         const patientIds = (cgl || []).map((l: any) => l.patient_id);
         
         if (patientIds.length > 0) {
-          const { data: users } = await supabase.from("users").select("id, display_name, email").in("id", patientIds);
+          const { data: users } = await supabase.from("users").select("id, display_name, full_name, email").in("id", patientIds);
           const usersMap = new Map((users || []).map((u: any) => [u.id, u]));
-          fetched = patientIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "patient" as const, patient_id: id }));
+          fetched = patientIds.map(id => ({ id, name: usersMap.get(id)?.full_name || usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "patient" as const, patient_id: id }));
         }
       } else {
         const { data: pl } = await supabase.from("provider_patient_links").select("patient_id").eq("provider_id", currentUserId).eq("status", "active");
         const patientIds = (pl || []).map((l: any) => l.patient_id);
         
         if (patientIds.length > 0) {
-          const { data: users } = await supabase.from("users").select("id, display_name, email").in("id", patientIds);
+          const { data: users } = await supabase.from("users").select("id, display_name, full_name, email").in("id", patientIds);
           const usersMap = new Map((users || []).map((u: any) => [u.id, u]));
-          fetched = patientIds.map(id => ({ id, name: usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "patient" as const, patient_id: id }));
+          fetched = patientIds.map(id => ({ id, name: usersMap.get(id)?.full_name || usersMap.get(id)?.display_name || usersMap.get(id)?.email || "Unknown", role: "patient" as const, patient_id: id }));
         }
       }
       setContacts(fetched);
@@ -137,7 +136,6 @@ export function CommunicationPanel({
         .limit(100);
         
       if (data) setMessages(data as Message[]);
-      setHasSentEmergencyEmail(false); // Reset emergency email flag for new contact
     };
     
     fetchMessages();
@@ -185,9 +183,7 @@ export function CommunicationPanel({
       setMessages(prev => [...prev, data as Message]);
       setInputText("");
       
-      // Trigger emergency email if this is the first message in the emergency sequence
-      if (isEmergency && !hasSentEmergencyEmail) {
-        setHasSentEmergencyEmail(true);
+      if (isEmergency) {
         const patientId = selectedContact.patient_id || currentUserId;
         authFetch("/api/communications/emergency", {
           method: "POST",
@@ -199,6 +195,38 @@ export function CommunicationPanel({
           headers: { "Content-Type": "application/json" }
         }).catch(err => console.error("Failed to send emergency alert", err));
       }
+    }
+  };
+
+  const triggerImmediateSOS = async () => {
+    if (!selectedContact) return;
+    setIsEmergency(true);
+    
+    const patientId = selectedContact.patient_id || currentUserId;
+    try {
+      await authFetch("/api/communications/emergency", {
+        method: "POST",
+        body: JSON.stringify({
+          patientId: patientId,
+          message: "🚨 [IMMEDIATE SOS ALERT TRIGGERED]",
+          senderName: "User"
+        }),
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      const { data } = await supabase.from("direct_messages").insert({
+        sender_id: currentUserId,
+        receiver_id: selectedContact.id,
+        content: "🚨 I have triggered an Immediate SOS Alert.",
+        type: "text",
+        is_emergency: true
+      } as any).select().single();
+      
+      if (data) {
+        setMessages(prev => [...prev, data as Message]);
+      }
+    } catch (err) {
+      console.error("Failed to send immediate emergency alert", err);
     }
   };
 
@@ -388,6 +416,14 @@ export function CommunicationPanel({
                   <AlertTriangle size={16} className={isEmergency ? "animate-pulse" : ""} />
                   {isEmergency ? "Emergency Active" : "Emergency"}
                 </button>
+                <button 
+                  onClick={triggerImmediateSOS}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm shadow-red-600/20"
+                  title="Send Immediate SOS Alert"
+                >
+                  <AlertTriangle size={16} />
+                  Send SOS
+                </button>
                 
                 <button 
                   onClick={() => startCall(selectedContact.id)}
@@ -455,7 +491,7 @@ export function CommunicationPanel({
               {isEmergency && (
                 <div className="mb-2 px-3 py-2 bg-red-50 text-red-800 text-xs rounded-lg flex items-start gap-2 border border-red-100">
                   <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                  <p><strong>Emergency Mode is ON.</strong> Your first message will immediately trigger an email alert to the user's registered inbox to wake them up.</p>
+                  <p><strong>Emergency Mode is ON.</strong> All messages you send will be marked as emergency and trigger immediate email alerts to the recipient.</p>
                 </div>
               )}
               

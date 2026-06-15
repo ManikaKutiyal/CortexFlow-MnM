@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     const { data: patients, error: patientError } = await supabase
       .from("users")
-      .select("id, email, display_name, photo_url, unique_patient_id")
+      .select("id, email, display_name, full_name, photo_url, unique_patient_id")
       .in("id", patientIds);
 
     if (patientError) {
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     const payload = (patients ?? []).map((patient) => ({
       id: patient.id,
-      name: patient.display_name ?? patient.email ?? "Patient",
+      name: patient.full_name ?? patient.display_name ?? patient.email ?? "Patient",
       email: patient.email ?? null,
       photo_url: patient.photo_url ?? null,
       unique_patient_id: patient.unique_patient_id ?? null,
