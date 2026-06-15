@@ -96,7 +96,7 @@ function PremiumOrb() {
     }
   });
 
-  const scale = viewport.width < 6 ? 1.4 : 2.2;
+  const scale = viewport.width < 6 ? 1.0 : 2.2;
 
   return (
     <group ref={groupRef} scale={scale}>

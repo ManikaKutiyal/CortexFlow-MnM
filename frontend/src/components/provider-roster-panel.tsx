@@ -23,6 +23,7 @@ export function ProviderRosterPanel() {
   const [patients, setPatients] = useState<ProviderPatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const loadRoster = useCallback(async () => {
     setIsLoading(true);
@@ -46,6 +47,24 @@ export function ProviderRosterPanel() {
   useGlobalRefresh(() => {
     if (isReady) void loadRoster();
   });
+  const removePatient = useCallback(async (patientId: string) => {
+    if (!window.confirm("Are you sure you want to remove this patient from your roster?")) return;
+    setActionId(patientId);
+    setError(null);
+    try {
+      const res = await authFetch("/api/provider/link-patient", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patient_id: patientId }),
+      });
+      if (!res.ok) throw new Error(await res.text() || "Failed to remove patient");
+      setPatients((prev) => prev.filter((p) => p.id !== patientId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove patient");
+    } finally {
+      setActionId(null);
+    }
+  }, []);
   const filtered = useMemo(() => {
     if (!search.trim()) return patients;
     const needle = search.toLowerCase();
@@ -187,6 +206,18 @@ export function ProviderRosterPanel() {
                       {hasAlerts && <span className="w-1.5 h-1.5 rounded-full animate-status-blink" style={{ background: "#D85A30" }} />}
                       {hasAlerts ? `${patient.open_alerts} alerts` : "stable"}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => void removePatient(patient.id)}
+                      disabled={actionId === patient.id}
+                      className="rounded-lg p-1.5 transition-colors disabled:opacity-50"
+                      style={{ color: "var(--nt-text-ghost)", border: "1px solid transparent" }}
+                      onMouseOver={(e) => { e.currentTarget.style.color = "#D85A30"; e.currentTarget.style.border = "1px solid rgba(216,90,48,0.2)"; e.currentTarget.style.background = "rgba(216,90,48,0.08)"; }}
+                      onMouseOut={(e) => { e.currentTarget.style.color = "var(--nt-text-ghost)"; e.currentTarget.style.border = "1px solid transparent"; e.currentTarget.style.background = "transparent"; }}
+                      title="Remove patient"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3.5h8M5.5 3.5v-1a1 1 0 011-1h1a1 1 0 011 1v1m1 0v7a1.5 1.5 0 01-1.5 1.5h-5A1.5 1.5 0 014 10.5v-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </button>
                   </div>
                 </div>
               );

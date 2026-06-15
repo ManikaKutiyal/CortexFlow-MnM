@@ -78,3 +78,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await requireAuthenticatedUser(req);
+    const body = await req.json() as { patient_id?: string };
+    const patientId = String(body.patient_id ?? "").trim();
+    if (!patientId) {
+      return NextResponse.json({ error: "Patient ID is required" }, { status: 400 });
+    }
+    const supabase = getSupabaseServerClient();
+    const { error } = await supabase
+      .from("caregiver_patient_links")
+      .delete()
+      .eq("caregiver_id", user.uid)
+      .eq("patient_id", patientId);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof AuthRequestError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    const message = error instanceof Error ? error.message : "Failed to remove patient";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

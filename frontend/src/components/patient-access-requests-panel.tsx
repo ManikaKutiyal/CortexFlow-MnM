@@ -4,11 +4,13 @@ import { useAuthFetch } from "@/hooks/useAuthFetch";
 import { useGlobalRefresh } from "@/providers/refresh-provider";
 type AccessRequest = {
   id: string;
-  caregiver_id: string;
+  type: "caregiver" | "provider";
+  requester_id: string;
   status: "pending" | "active" | "revoked";
   created_at: string;
   users?: {
     full_name: string | null;
+    display_name: string | null;
     email: string | null;
   };
 };
@@ -46,16 +48,20 @@ export function PatientAccessRequestsPanel() {
   useGlobalRefresh(() => {
     if (isReady) void loadRequests();
   });
-  const respond = useCallback(async (id: string, status: "active" | "revoked") => {
-    setActionId(id);
+  const respond = useCallback(async (req: AccessRequest, status: "active" | "revoked") => {
+    setActionId(req.id);
+    const endpoint = req.type === "provider" 
+      ? `/api/provider/link-request/${req.id}`
+      : `/api/caregiver/link-request/${req.id}`;
+
     try {
-      const res = await authFetch(`/api/caregiver/link-request/${id}`, {
+      const res = await authFetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error(await res.text() || "Failed to update");
-      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+      setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status } : r));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update");
     } finally {
@@ -136,12 +142,12 @@ export function PatientAccessRequestsPanel() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(186,117,23,0.1)", border: "1px solid rgba(186,117,23,0.2)" }}>
-                        <span style={{ color: "#BA7517", fontWeight: 700, fontSize: 14 }}>{(req.users?.full_name ?? "C")[0].toUpperCase()}</span>
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: req.type === "provider" ? "rgba(45,156,219,0.1)" : "rgba(186,117,23,0.1)", border: req.type === "provider" ? "1px solid rgba(45,156,219,0.2)" : "1px solid rgba(186,117,23,0.2)" }}>
+                        <span style={{ color: req.type === "provider" ? "#2D9CDB" : "#BA7517", fontWeight: 700, fontSize: 14 }}>{(req.users?.full_name ?? req.users?.display_name ?? "C")[0].toUpperCase()}</span>
                       </div>
                       <div>
                         <div className="text-sm font-semibold" style={{ color: "var(--nt-text-hi)" }}>
-                          {req.users?.full_name ?? "Caregiver"}
+                          {req.users?.full_name ?? req.users?.display_name ?? (req.type === "provider" ? "Healthcare Provider" : "Caregiver")}
                         </div>
                         <div className="text-xs mt-0.5" style={{ color: "var(--nt-text-ghost)" }}>
                           {req.users?.email} · {new Date(req.created_at).toLocaleDateString()}
@@ -155,7 +161,7 @@ export function PatientAccessRequestsPanel() {
                     <div className="flex gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => void respond(req.id, "active")}
+                        onClick={() => void respond(req, "active")}
                         disabled={actionId === req.id}
                         className="rounded-lg px-3.5 py-2 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
                         style={{ background: "rgba(29,158,117,0.12)", color: "#1D9E75", border: "1px solid rgba(29,158,117,0.25)" }}
@@ -165,7 +171,7 @@ export function PatientAccessRequestsPanel() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void respond(req.id, "revoked")}
+                        onClick={() => void respond(req, "revoked")}
                         disabled={actionId === req.id}
                         className="rounded-lg px-3.5 py-2 text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
                         style={{ background: "rgba(216,90,48,0.08)", color: "#D85A30", border: "1px solid rgba(216,90,48,0.2)" }}
@@ -208,12 +214,12 @@ export function PatientAccessRequestsPanel() {
                       }}
                     >
                       <span style={{ color: isApproved ? "#1D9E75" : "#D85A30", fontWeight: 700, fontSize: 11 }}>
-                        {(req.users?.full_name ?? "C")[0].toUpperCase()}
+                        {(req.users?.full_name ?? req.users?.display_name ?? "C")[0].toUpperCase()}
                       </span>
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate" style={{ color: "var(--nt-text-hi)" }}>
-                        {req.users?.full_name ?? "Caregiver"}
+                        {req.users?.full_name ?? req.users?.display_name ?? (req.type === "provider" ? "Healthcare Provider" : "Caregiver")}
                       </div>
                       <div className="text-[10px] font-mono" style={{ color: "var(--nt-text-ghost)" }}>
                         {req.users?.email}

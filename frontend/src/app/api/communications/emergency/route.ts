@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       patientId,
       `You have a new message from ${finalSenderName}`,
       `Emergency Mode has been activated in the chat.\n\nMessage: "${message}"\n\nPlease log in immediately to assist.`,
-      "danger"
+      "danger",
+      user.uid
     );
 
     return NextResponse.json({ success: true }, { status: 200 });

@@ -62,6 +62,7 @@ export function CaregiverPatientLinkPanel() {
   const [patientCode, setPatientCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const loadLinks = useCallback(async () => {
     setLoading(true);
@@ -110,6 +111,26 @@ export function CaregiverPatientLinkPanel() {
       setSubmitting(false);
     }
   }, [patientCode, loadLinks]);
+
+  const removePatient = useCallback(async (patientId: string) => {
+    if (!window.confirm("Are you sure you want to remove this patient link?")) return;
+    setActionId(patientId);
+    setError(null);
+    try {
+      const res = await authFetch("/api/caregiver/link-request", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patient_id: patientId }),
+      });
+      if (!res.ok) throw new Error(await res.text() || "Failed to remove link");
+      void loadLinks();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove link");
+    } finally {
+      setActionId(null);
+    }
+  }, [loadLinks]);
+
   const approvedLink = links.find((l) => l.status === "approved" || l.status === "active");
   return (
     <div className="h-full overflow-y-auto" style={{ padding: 18 }}>
@@ -257,13 +278,27 @@ export function CaregiverPatientLinkPanel() {
                       <div className="text-[10px] font-mono" style={{ color: "var(--nt-text-ghost)" }}>{new Date(link.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
-                  <span
-                    className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase shrink-0"
-                    style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}
-                  >
-                    {sc.icon}
-                    {link.status}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase"
+                      style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}
+                    >
+                      {sc.icon}
+                      {link.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void removePatient(link.patient_id)}
+                      disabled={actionId === link.patient_id}
+                      className="rounded-lg p-1.5 transition-colors disabled:opacity-50"
+                      style={{ color: "var(--nt-text-ghost)", border: "1px solid transparent" }}
+                      onMouseOver={(e) => { e.currentTarget.style.color = "#D85A30"; e.currentTarget.style.border = "1px solid rgba(216,90,48,0.2)"; e.currentTarget.style.background = "rgba(216,90,48,0.08)"; }}
+                      onMouseOut={(e) => { e.currentTarget.style.color = "var(--nt-text-ghost)"; e.currentTarget.style.border = "1px solid transparent"; e.currentTarget.style.background = "transparent"; }}
+                      title="Remove patient link"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3.5h8M5.5 3.5v-1a1 1 0 011-1h1a1 1 0 011 1v1m1 0v7a1.5 1.5 0 01-1.5 1.5h-5A1.5 1.5 0 014 10.5v-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </button>
+                  </div>
                 </div>
               );
             })}
