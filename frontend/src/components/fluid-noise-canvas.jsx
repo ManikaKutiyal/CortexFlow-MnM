@@ -190,36 +190,15 @@ void main() {
 
 
 
-  float quant = 6.0;
-
-  float grain = (hash(gl_FragCoord.xy + uTime * 50.0) - 0.5) * 0.04;
-
-  col = floor((col + grain) * quant) / quant;
-
-
-
+  // Removed quantization and scan lines for a smoother, perfect fluid look
   float vignette = smoothstep(1.05, 0.1, length(uv - 0.5));
-
   col *= mix(0.86, 1.07, vignette);
 
-  float scan = sin((uv.y + t * 0.12) * 220.0) * 0.008;
-
-  col += scan;
-
-
-
-  // Keep light mode cleaner and dark mode deeper.
-
   if (uDark < 0.5) {
-
     col = mix(col, vec3(0.96, 0.98, 1.0), 0.08);
-
   }
 
-
-
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-
 }
 
 `;
@@ -282,21 +261,13 @@ function FluidPlane({ isDark, lowPower }) {
     u.uDark.value = isDark ? 1 : 0;
 
     if (isDark) {
-
-      u.uBase.value.setRGB(0.01, 0.07, 0.1);
-
-      u.uMid.value.setRGB(0.04, 0.2, 0.26);
-
-      u.uHigh.value.setRGB(0.76, 0.45, 0.16);
-
+      u.uBase.value.setRGB(0.01, 0.08, 0.15);
+      u.uMid.value.setRGB(0.06, 0.35, 0.40);
+      u.uHigh.value.setRGB(0.85, 0.50, 0.15);
     } else {
-
-      u.uBase.value.setRGB(0.88, 0.94, 0.98);
-
-      u.uMid.value.setRGB(0.62, 0.8, 0.88);
-
-      u.uHigh.value.setRGB(0.91, 0.67, 0.43);
-
+      u.uBase.value.setRGB(0.85, 0.94, 0.98);
+      u.uMid.value.setRGB(0.40, 0.85, 0.92);
+      u.uHigh.value.setRGB(0.95, 0.70, 0.35);
     }
 
   }, [isDark]);

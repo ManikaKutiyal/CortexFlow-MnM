@@ -66,8 +66,7 @@
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-syne);
 }
-* { box-sizing: border-box; }
-html, body { height: 100%; overflow: hidden; }
+html, body { min-height: 100%; }
 body {
   background: var(--background);
   color: var(--nt-text-hi);
