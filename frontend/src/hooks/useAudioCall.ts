@@ -18,17 +18,19 @@ export function useAudioCall(userId: string | undefined) {
     if (!userId) return;
 
     const supabase = getSupabaseBrowserClient();
-    // Unique channel for this user to receive signals
-    const channel = supabase.channel(`call_signaling:${userId}`);
+    // Use a single global channel for all call signaling
+    const channel = supabase.channel(`global_call_signaling`);
 
     channel
       .on("broadcast", { event: "call_offer" }, async ({ payload }: any) => {
+        if (payload.targetId !== userId) return; // Only process if meant for me
+        
         if (callState !== "idle") {
           // Busy
-          await supabase.channel(`call_signaling:${payload.callerId}`).send({
+          await channel.send({
             type: "broadcast",
             event: "call_rejected",
-            payload: { reason: "busy" }
+            payload: { reason: "busy", targetId: payload.callerId }
           });
           return;
         }
@@ -39,20 +41,26 @@ export function useAudioCall(userId: string | undefined) {
         sessionStorage.setItem("pendingOffer", JSON.stringify(payload.offer));
       })
       .on("broadcast", { event: "call_answer" }, async ({ payload }: any) => {
+        if (payload.targetId !== userId) return;
+        
         if (peerConnection.current) {
           await peerConnection.current.setRemoteDescription(payload.answer);
           setCallState("connected");
         }
       })
       .on("broadcast", { event: "ice_candidate" }, async ({ payload }: any) => {
+        if (payload.targetId !== userId) return;
+        
         if (peerConnection.current && payload.candidate) {
           await peerConnection.current.addIceCandidate(payload.candidate);
         }
       })
-      .on("broadcast", { event: "call_ended" }, () => {
+      .on("broadcast", { event: "call_ended" }, ({ payload }: any) => {
+        if (payload.targetId !== userId) return;
         endCall(false);
       })
-      .on("broadcast", { event: "call_rejected" }, () => {
+      .on("broadcast", { event: "call_rejected" }, ({ payload }: any) => {
+        if (payload.targetId !== userId) return;
         endCall(false);
         alert("Call was rejected or user is busy.");
       })
@@ -73,10 +81,10 @@ export function useAudioCall(userId: string | undefined) {
     
     pc.onicecandidate = (event) => {
       if (event.candidate && channelRef.current) {
-        getSupabaseBrowserClient().channel(`call_signaling:${targetId}`).send({
+        channelRef.current.send({
           type: "broadcast",
           event: "ice_candidate",
-          payload: { candidate: event.candidate, senderId: userId }
+          payload: { candidate: event.candidate, senderId: userId, targetId }
         });
       }
     };
@@ -111,11 +119,13 @@ export function useAudioCall(userId: string | undefined) {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      getSupabaseBrowserClient().channel(`call_signaling:${targetUserId}`).send({
-        type: "broadcast",
-        event: "call_offer",
-        payload: { offer, callerId: userId }
-      });
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "call_offer",
+          payload: { offer, callerId: userId, targetId: targetUserId }
+        });
+      }
     } catch (e) {
       endCall(false);
     }
@@ -136,11 +146,13 @@ export function useAudioCall(userId: string | undefined) {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      getSupabaseBrowserClient().channel(`call_signaling:${remoteUser}`).send({
-        type: "broadcast",
-        event: "call_answer",
-        payload: { answer, responderId: userId }
-      });
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "call_answer",
+          payload: { answer, responderId: userId, targetId: remoteUser }
+        });
+      }
 
       setCallState("connected");
     } catch (e) {
@@ -149,22 +161,22 @@ export function useAudioCall(userId: string | undefined) {
   };
 
   const rejectCall = () => {
-    if (remoteUser && userId) {
-      getSupabaseBrowserClient().channel(`call_signaling:${remoteUser}`).send({
+    if (remoteUser && userId && channelRef.current) {
+      channelRef.current.send({
         type: "broadcast",
         event: "call_rejected",
-        payload: { reason: "declined" }
+        payload: { reason: "declined", targetId: remoteUser }
       });
     }
     endCall(false);
   };
 
   const endCall = (notifyRemote: boolean = true) => {
-    if (notifyRemote && remoteUser && userId) {
-      getSupabaseBrowserClient().channel(`call_signaling:${remoteUser}`).send({
+    if (notifyRemote && remoteUser && userId && channelRef.current) {
+      channelRef.current.send({
         type: "broadcast",
         event: "call_ended",
-        payload: { senderId: userId }
+        payload: { senderId: userId, targetId: remoteUser }
       });
     }
 
