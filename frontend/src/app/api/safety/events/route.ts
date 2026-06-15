@@ -73,31 +73,35 @@ export async function POST(req: NextRequest) {
           photoBase64: body.photo ?? null,
         };
         const recipients: string[] = [];
-        const { data: caregiverLink } = await supabase
+        const { data: caregiverLinks } = await supabase
           .from("caregiver_patient_links")
           .select("caregiver_id")
           .eq("patient_id", user.uid)
-          .eq("status", "approved")
-          .maybeSingle();
-        if (caregiverLink?.caregiver_id) {
-          const { data: cg } = await supabase
-            .from("users")
-            .select("email")
-            .eq("id", caregiverLink.caregiver_id)
-            .maybeSingle();
-          if (cg?.email) recipients.push(cg.email);
+          .eq("status", "active");
+        for (const cl of caregiverLinks ?? []) {
+          if (cl.caregiver_id) {
+            const { data: cg } = await supabase
+              .from("users")
+              .select("email")
+              .eq("id", cl.caregiver_id)
+              .maybeSingle();
+            if (cg?.email) recipients.push(cg.email);
+          }
         }
         const { data: providerLinks } = await supabase
           .from("provider_patient_links")
           .select("provider_id")
-          .eq("patient_id", user.uid);
+          .eq("patient_id", user.uid)
+          .eq("status", "active");
         for (const pl of providerLinks ?? []) {
-          const { data: prov } = await supabase
-            .from("users")
-            .select("email")
-            .eq("id", pl.provider_id)
-            .maybeSingle();
-          if (prov?.email) recipients.push(prov.email);
+          if (pl.provider_id) {
+            const { data: prov } = await supabase
+              .from("users")
+              .select("email")
+              .eq("id", pl.provider_id)
+              .maybeSingle();
+            if (prov?.email) recipients.push(prov.email);
+          }
         }
         for (const email of recipients) {
           await sendSosEmail({ ...emailOpts, recipientEmail: email });
